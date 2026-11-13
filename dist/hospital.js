@@ -16,6 +16,7 @@ const Hospital = (() => {
   // Threshold and frame height are measured in the rendered 600px-high scene.
   const geometry = {
     ward: { floorY: 456, doorHeight: 264 },
+    vision: { floorY: 456, doorHeight: 290 },
     stairs: {
       floorY: 459, doorHeight: 335,
       outlines: { down: [71, 122, 181, 335], up: [655, 123, 194, 334] },
@@ -57,7 +58,21 @@ const Hospital = (() => {
         label, id + "-room-" + (slot + 1), "return")
     );
     doors.push(door("stairs", doorCenter("stairs") * corridorScale, "north", "楼梯间", stairs, "hall"));
+    const vision = id + "-vision";
+    doors.push({
+      ...door("vision", 1018, "south", "走进陌生的门", vision, "return"),
+      hallucination: true,
+    });
     scenes[hall] = { floor: id, name: "走廊", art: hallArt, width: corridorWidth, doors };
+    const reflection = index % 2 === 0;
+    scenes[vision] = {
+      floor: id,
+      name: reflection ? "倒影观察室" : "无号病房",
+      art: reflection ? "vision-reflection" : "vision-ward",
+      width: 900,
+      hallucination: true,
+      doors: [door("return", 450, "south", "返回走廊", hall, "vision")],
+    };
 
     rooms.forEach((name, slot) => {
       const roomId = id + "-room-" + (slot + 1);

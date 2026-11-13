@@ -12,6 +12,7 @@ const HospitalMap = (() => {
     const hall = scenes[hallId];
     const cells = [{ id: hallId, x: 15, y: 68, width: 482, height: 40 }];
     for (const door of hall.doors) {
+      if (door.hallucination) continue;
       const x = 24 + 464 * door.x / hall.width;
       const stairs = door.id === "stairs";
       const north = door.side === "north";
@@ -29,7 +30,9 @@ const HospitalMap = (() => {
   function draw(id, visited, player) {
     const scene = scenes[id];
     const cells = plan(scene.floor);
-    const selected = cells.find((cell) => cell.id === id);
+    const selected = scene.hallucination
+      ? { id, x: 154, y: 35, width: 204, height: 106 }
+      : cells.find((cell) => cell.id === id);
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.strokeStyle = "#a9cfb014";
     context.lineWidth = 1;
@@ -44,11 +47,11 @@ const HospitalMap = (() => {
     }
     context.stroke();
 
-    for (const cell of cells) {
+    for (const cell of scene.hallucination ? [selected] : cells) {
       const active = cell === selected;
       const seen = visited.has(cell.id);
-      context.fillStyle = active ? "#375448" : seen ? "#233930" : "#14231d";
-      context.strokeStyle = active ? "#9bc8a8" : seen ? "#638370" : "#415d50";
+      context.fillStyle = scene.hallucination ? "#35262e" : active ? "#375448" : seen ? "#233930" : "#14231d";
+      context.strokeStyle = scene.hallucination ? "#9b707c" : active ? "#9bc8a8" : seen ? "#638370" : "#415d50";
       context.lineWidth = 2;
       const hallEdge = cell.north ? cells[0].y : cells[0].y + cells[0].height;
       const roomEdge = cell.north ? cell.y + cell.height : cell.y;
@@ -94,7 +97,7 @@ const HospitalMap = (() => {
 
   function update(id, visited) {
     const scene = scenes[id];
-    label.textContent = scene.floor + " / " + scene.name;
+    label.textContent = (scene.hallucination ? "？" : scene.floor) + " / " + scene.name;
     const sections = floors.map((floor) => {
       const section = document.createElement("section");
       section.className = "map-floor";

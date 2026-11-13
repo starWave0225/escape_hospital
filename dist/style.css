@@ -92,6 +92,8 @@ dialog::backdrop { background: #040907c9; }
 
 .backdrop .panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; }
 .backdrop.mirrored .panel { transform: scaleX(-1); }
+.backdrop .clean-panel { opacity: 1; transition: opacity .7s ease-in-out; }
+.stage[data-sanity]:not([data-sanity="clear"]) .clean-panel { opacity: 0; }
 .backdrop[data-floor="3F"] { filter: brightness(.69) saturate(.48); }
 .backdrop[data-floor="3F"]::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -105,6 +107,58 @@ dialog::backdrop { background: #040907c9; }
 }
 .backdrop[data-floor="1F"] { filter: brightness(1.06) sepia(.11); }
 .backdrop[data-floor="B1"] { filter: brightness(.68) sepia(.27) saturate(.85); }
+.sanity-haze {
+  position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 51% 48%, transparent 48%, #160a13aa 100%);
+  transition: opacity .75s ease;
+}
+.stage[data-sanity="decay"] .sanity-haze { opacity: .26; }
+.stage[data-sanity="unstable"] .sanity-haze { opacity: .52; }
+.stage[data-sanity="visions"] .sanity-haze { opacity: .82; }
+.world.stumbling { animation: sanity-shudder .42s ease-out both; }
+@keyframes sanity-shudder {
+  14% { translate: -4px 2px; }
+  31% { translate: 5px -2px; }
+  53% { translate: -3px 1px; }
+  71% { translate: 2px 0; }
+}
+.sanity-figure {
+  position: absolute; z-index: 2; pointer-events: none; opacity: 0;
+  transform: translate(-50%, -100%);
+}
+.sanity-figure[data-figure="patient"] {
+  filter: grayscale(.5) brightness(.6) contrast(1.35) drop-shadow(6px 0 #321d3160);
+  transform: translate(-50%, -100%) skewX(-8deg) scale(.76, 1.13);
+  transform-origin: center bottom;
+  animation: apparition 1.65s ease both;
+  --figure-opacity: .72;
+}
+.sanity-figure[data-figure="ghost"] {
+  z-index: 4;
+  filter: grayscale(1) brightness(.76) contrast(1.6) blur(.9px) drop-shadow(7px -2px #576b6680);
+  transform: translate(-50%, -100%) skewX(6deg) scale(.7, 1.2);
+  transform-origin: center bottom;
+  animation: apparition .95s ease both;
+  --figure-opacity: .72;
+}
+.world.dark .sanity-figure[data-figure="ghost"] { --figure-opacity: .33; }
+@keyframes apparition {
+  0%, 100% { opacity: 0; }
+  25%, 64% { opacity: var(--figure-opacity); }
+}
+.stage[data-sanity]:not([data-sanity="clear"]) .player-body {
+  filter: contrast(1.08) drop-shadow(2px 0 #552f4666);
+}
+.hallucination-door .door-recess {
+  background: linear-gradient(180deg, #543f5928, #241626b0 46%, #0e090ff5);
+  box-shadow: inset 0 -4px #7a556f86;
+}
+.hallucination-door::before, .hallucination-door::after {
+  background: linear-gradient(180deg, #8e7285d9 0 5px, #54424ed9 6px 15px, #271c27eb 90%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .world.stumbling { animation: none; }
+}
 #touch-interact { display: flex; align-items: center; gap: 6px; padding: 8px 11px; }
 @media (max-width: 850px) {
   .floors { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }

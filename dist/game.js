@@ -10,6 +10,8 @@ const markers = get("markers");
 const actor = get("player");
 const body = get("player-body");
 const playerArt = body.getContext("2d");
+const sanityFigure = get("sanity-figure");
+const figureArt = sanityFigure.getContext("2d");
 const characterButtons = [...document.querySelectorAll("[data-character]")];
 const characterArt = new Map();
 const map = get("map");
@@ -38,10 +40,12 @@ const keys = new Set();
 const pointers = new Map();
 const sprintKeys = new Set();
 const backdrops = new Map();
+const cleanBackdrops = new Map();
 const saveKey = "night-shift-hospital-map-v1";
 const sceneHeight = 600;
 const maxStamina = 100;
 const maxSanity = 100;
+const sanityDrain = 0.2;
 const darknessDrain = 2;
 const sprintDrain = 26;
 const staminaRecovery = 22;
@@ -66,6 +70,11 @@ let gait = "idle";
 let sprinting = false;
 let stamina = maxStamina;
 let sanity = maxSanity;
+let sanityStage = "clear";
+let untilStumble = 0;
+let stumbleTime = 0;
+let untilFigure = 0;
+let figureTime = 0;
 let attackTime = 0;
 let recoveryTime = 0;
 let exhausted = false;
@@ -121,6 +130,13 @@ function readSave() {
     player.direction = Number.isFinite(saved.direction) ? saved.direction : player.facing === 1 ? 0 : Math.PI;
     if (Number.isFinite(saved.stamina)) stamina = clamp(saved.stamina, 0, maxStamina);
     if (Number.isFinite(saved.sanity)) sanity = clamp(saved.sanity, 0, maxSanity);
+    if (scenes[sceneId].hallucination && sanity >= 20) {
+      const exit = scenes[sceneId].doors[0];
+      sceneId = exit.target;
+      const entrance = scenes[sceneId].doors.find((portal) => portal.id === exit.arrival);
+      player.x = entrance.x;
+      player.y = entrance.landingY;
+    }
     exhausted = Boolean(saved.exhausted) && stamina < sprintThreshold;
     starterBatteryTaken = saved.starterBatteryTaken === true || saved.hasBattery === true;
     spareBatteryTaken = saved.spareBatteryTaken === true;
@@ -248,23 +264,93 @@ function renderStamina() {
 
 function renderResource(meter, number, amount, maximum) {
   const value = Math.ceil(amount);
-  if (meter.value === value) return;
+  if (meter.value === value) return false;
   meter.value = value;
   number.textContent = value;
   meter.parentElement.style.setProperty("--level", (value / maximum * 100) + "%");
+  return true;
+}
+
+function renderSanity() {
+  const value = sanity > 0 ? Math.max(1, Math.floor(sanity)) : 0;
+  return renderResource(sanityMeter, sanityNumber, value, maxSanity);
 }
 
 function updateSanity(elapsed) {
-  if (hasAmbientLight() || flashlightOn || elapsed === 0) return;
-  const previousValue = Math.ceil(sanity);
-  sanity = Math.max(0, sanity - darknessDrain * elapsed);
-  renderResource(sanityMeter, sanityNumber, sanity, maxSanity);
+  if (elapsed === 0) return;
+  const drain = !hasAmbientLight() && !flashlightOn ? darknessDrain : sanityDrain;
+  sanity = Math.max(0, sanity - drain * elapsed);
+  const valueChanged = renderSanity();
+  const portalsChanged = updateSanityStage();
+  if (portalsChanged && scene.doors.some((portal) => portal.hallucination)) {
+    buildInteractionCues();
+    render();
+  }
   if (sanity === 0) showDeath();
-  if (Math.ceil(sanity) !== previousValue) save();
+  if (valueChanged || portalsChanged) save();
+}
+
+function updateSanityStage() {
+  const next = sanity < 20 ? "visions" : sanity < 50 ? "unstable" : sanity < 70 ? "decay" : "clear";
+  if (stage.dataset.sanity === next) return false;
+  const portalsChanged = (next === "visions") !== (sanityStage === "visions");
+  sanityStage = next;
+  stage.dataset.sanity = next;
+  untilStumble = next === "clear" || next === "decay" ? 0 : 2;
+  untilFigure = next === "clear" ? 0 : next === "visions" ? .5 : 2;
+  return portalsChanged;
+}
+
+function updateSanityEffects(elapsed) {
+  if (sanityStage === "clear") return;
+
+  if (sanityStage === "unstable" || sanityStage === "visions") {
+    untilStumble -= elapsed;
+    if (untilStumble <= 0) {
+      stumbleTime = .28 + Math.random() * .17;
+      untilStumble = 8 + Math.random() * 6;
+      world.classList.add("stumbling");
+    } else if (stumbleTime > 0) {
+      stumbleTime = Math.max(0, stumbleTime - elapsed);
+      if (stumbleTime === 0) world.classList.remove("stumbling");
+    }
+  }
+
+  untilFigure -= elapsed;
+  if (untilFigure <= 0) {
+    const ghost = sanityStage === "visions";
+    const reach = Math.min(visibleWidth * .32, 360);
+    const offset = Math.cos(player.direction) < 0 ? -reach : reach;
+    const camera = clamp(player.x - visibleWidth / 2, 0, Math.max(0, scene.width - visibleWidth));
+    const left = Math.max(50, camera + visibleWidth * .15);
+    const right = Math.min(scene.width - 50, camera + visibleWidth * .85);
+    let x = clamp(player.x + offset, left, right);
+    if (Math.abs(x - player.x) < reach * .65) x = clamp(player.x - offset, left, right);
+    const height = scene.doorHeight * (ghost ? 1 : .85);
+    sanityFigure.style.left = x + "px";
+    sanityFigure.style.top = (scene.back + 7) + "px";
+    sanityFigure.style.height = height + "px";
+    sanityFigure.style.width = height * 272 / 256 + "px";
+    drawCharacter(figureArt, character === "man" ? "woman" : "man", "idle", false, 0, 1, Math.PI / 2);
+    sanityFigure.dataset.figure = ghost ? "ghost" : "patient";
+    figureTime = ghost ? .95 : 1.65;
+    untilFigure = (ghost ? 4 : 9) + Math.random() * 5;
+  } else if (figureTime > 0) {
+    figureTime = Math.max(0, figureTime - elapsed);
+    if (figureTime === 0) delete sanityFigure.dataset.figure;
+  }
+}
+
+function clearSanityEffects() {
+  stumbleTime = 0;
+  figureTime = 0;
+  world.classList.remove("stumbling");
+  delete sanityFigure.dataset.figure;
 }
 
 function showDeath() {
   clearMovement();
+  clearSanityEffects();
   setAttackTime(0);
   statusHud.dataset.dead = "true";
   world.classList.add("player-dead");
@@ -392,6 +478,7 @@ function showScene(id, image, arrival) {
   gait = "idle";
   stride = 0;
   sprinting = false;
+  clearSanityEffects();
   get("location").textContent = "住院部 / " + scene.name;
   world.style.width = scene.width + "px";
   world.classList.toggle("dark", !hasAmbientLight());
@@ -399,13 +486,15 @@ function showScene(id, image, arrival) {
   backdrop.dataset.floor = scene.floor;
   backdrop.dataset.art = scene.art;
   backdrop.classList.toggle("mirrored", Boolean(scene.mirrored));
-  backdrop.replaceChildren(image);
+  const clean = cleanBackdrops.get(scene.art);
+  backdrop.replaceChildren(image, ...(clean ? [clean] : []));
 
+  updateSanityStage();
   buildInteractionCues();
   HospitalMap.update(sceneId, visited);
   updateViewSize();
   renderStamina();
-  renderResource(sanityMeter, sanityNumber, sanity, maxSanity);
+  renderSanity();
   if (sanity === 0) showDeath();
   save();
 }
@@ -436,7 +525,8 @@ function buildInteractionCues() {
     plate.setAttribute("aria-hidden", "true");
     itemSprites.push(plate);
   }
-  sceneInteractions = [...scene.doors, ...items];
+  const doors = scene.doors.filter((portal) => !portal.hallucination || sanityStage === "visions");
+  sceneInteractions = [...doors, ...items];
   for (const { id, outline: [x, y] } of items) {
     if (id === "drawer") continue;
     const sprite = document.createElement("span");
@@ -459,21 +549,22 @@ function buildInteractionCues() {
     });
     return [interaction.id, button];
   }));
-  markers.replaceChildren(buildForegroundWall(), ...itemSprites, ...markerButtons.values());
+  markers.replaceChildren(buildForegroundWall(doors), ...itemSprites, ...markerButtons.values());
   showInteractionCue(undefined);
 }
 
-function buildForegroundWall() {
+function buildForegroundWall(portals) {
   const foreground = document.createElement("div");
   foreground.className = "foreground-wall";
   foreground.setAttribute("aria-hidden", "true");
-  const doors = scene.doors.filter((door) => door.side === "south").sort((a, b) => a.x - b.x);
+  const doors = portals.filter((door) => door.side === "south").sort((a, b) => a.x - b.x);
   let wallStart = 0;
-  for (const { outline } of doors) {
+  for (const { outline, hallucination } of doors) {
     const [left, , width] = outline;
     addWallSegment(left);
     const doorway = document.createElement("span");
     doorway.className = "foreground-door";
+    if (hallucination) doorway.classList.add("hallucination-door");
     positionOutline(doorway, outline);
     const recess = document.createElement("span");
     recess.className = "door-recess";
@@ -501,7 +592,7 @@ function positionOutline(element, [left, top, width, height]) {
 }
 
 async function interact(interaction = nearby) {
-  if (gameMenuOpen() || changingScene || attackTime > 0 || !interaction) return;
+  if (gameMenuOpen() || changingScene || attackTime > 0 || !sceneInteractions.includes(interaction)) return;
   destination = undefined;
   if (interaction.kind === "item") {
     let message;
@@ -601,10 +692,11 @@ function aimAtClick(event) {
 function animate(time) {
   const elapsed = Math.min((time - (frameTime ?? time)) / 1000, 0.05);
   frameTime = time;
-  if (!gameMenuOpen() && !changingScene) {
+  if (!document.hidden && !gameMenuOpen() && !changingScene) {
     drainBattery(elapsed);
     updateSanity(elapsed);
     if (sanity > 0) {
+      updateSanityEffects(elapsed);
       if (attackTime > 0) setAttackTime(Math.max(0, attackTime - elapsed));
       updateMovement(elapsed, time);
     }
@@ -613,8 +705,9 @@ function animate(time) {
 }
 
 function updateMovement(elapsed, time) {
+  const canMove = attackTime === 0 && stumbleTime === 0;
   const directions = new Set();
-  if (attackTime === 0) {
+  if (canMove) {
       for (const key of keys) directions.add(movement.get(key));
       for (const direction of pointers.values()) directions.add(direction);
   }
@@ -627,7 +720,7 @@ function updateMovement(elapsed, time) {
   const speedY = canSprint ? 204 : 132;
   let x = clamp(player.x + dx * speedX * elapsed * diagonal, 33, scene.width - 33);
   let y = clamp(player.y + dy * speedY * elapsed * diagonal, scene.back, scene.front);
-  if (destination && attackTime === 0) {
+  if (destination && canMove) {
       const distanceX = destination.x - player.x;
       const distanceY = destination.y - player.y;
       const travelTime = Math.hypot(distanceX / speedX, distanceY / speedY);
@@ -657,7 +750,7 @@ function updateMovement(elapsed, time) {
       saveDelay = setTimeout(save, 200);
   }
   if (moving || facingChanged || dx || dy) render();
-  if (destination && attackTime === 0 && x === destination.x && y === destination.y && time >= destination.enterAfter) {
+  if (destination && canMove && x === destination.x && y === destination.y && time >= destination.enterAfter) {
       const { interaction } = destination;
       destination = undefined;
       if (interaction) interact(interaction);
@@ -921,6 +1014,17 @@ async function loadAssets() {
   retry.hidden = true;
   const arts = new Set(Object.values(scenes).map((entry) => entry.art));
   const assets = [...arts].map(prepareBackdrop);
+  for (const art of arts) {
+    if (!art.startsWith("vision-")) {
+      assets.push(prepareBackdrop("clean-" + art).then((image) => {
+        if (image) {
+          image.classList.add("clean-panel");
+          cleanBackdrops.set(art, image);
+        }
+        return image;
+      }));
+    }
+  }
   assets.push(prepareCabinet(), prepareMusic(), prepareTitleArtwork());
   for (const button of characterButtons) {
     const id = button.dataset.character;
