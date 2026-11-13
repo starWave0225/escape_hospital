@@ -149,13 +149,6 @@ dialog::backdrop { background: #040907c9; }
 .stage[data-sanity]:not([data-sanity="clear"]) .player-body {
   filter: contrast(1.08) drop-shadow(2px 0 #552f4666);
 }
-.hallucination-door .door-recess {
-  background: linear-gradient(180deg, #543f5928, #241626b0 46%, #0e090ff5);
-  box-shadow: inset 0 -4px #7a556f86;
-}
-.hallucination-door::before, .hallucination-door::after {
-  background: linear-gradient(180deg, #8e7285d9 0 5px, #54424ed9 6px 15px, #271c27eb 90%);
-}
 @media (prefers-reduced-motion: reduce) {
   .world.stumbling { animation: none; }
 }
@@ -206,37 +199,39 @@ dialog::backdrop { background: #040907c9; }
   position: absolute; z-index: 2; padding: 0;
   border: 0; border-radius: 2px; background: transparent;
 }
-.foreground-wall {
-  position: absolute; z-index: 1; inset: 0; pointer-events: none;
+.foreground-threshold {
+  position: absolute; z-index: 1; pointer-events: none;
+  --jamb-edge: #7a8273;
+  --jamb-face: #333e34;
+  --metal-edge: #aaa899;
+  --metal-face: #5c6056;
+  background: radial-gradient(ellipse 54% 45% at 50% 100%, #0d1513b8, transparent);
 }
-.wall-section {
-  position: absolute; inset-block: auto 0; height: 72px;
-  background: linear-gradient(to bottom, #273d3415, #17262080 52%, #0b1711d4),
-    repeating-linear-gradient(90deg, transparent 0 75px, #18231c30 76px 77px);
-  border-bottom: 5px solid #111d17b8;
+.stage[data-sanity="clear"] .foreground-threshold {
+  --jamb-edge: #9da79a;
+  --jamb-face: #48564c;
+  --metal-edge: #b4b9aa;
+  --metal-face: #737d72;
 }
-.wall-section::before {
-  content: ""; position: absolute; inset: 0 0 auto; height: 12px;
-  background: linear-gradient(#84948766, #4e5e5273 48%, #19292182 56%, transparent);
+.stage .hallucination-threshold {
+  --jamb-edge: #856d81;
+  --jamb-face: #3f303d;
+  --metal-edge: #a48698;
+  --metal-face: #594254;
 }
-.foreground-door {
-  position: absolute;
-  --threshold-shape: polygon(13% 0, 87% 0, 100% 100%, 0 100%);
+.foreground-threshold::before, .foreground-threshold::after {
+  content: ""; position: absolute; bottom: 0; width: 23px; height: 29px; z-index: 1;
+  background: linear-gradient(165deg, var(--jamb-edge) 0 18%, var(--jamb-face) 21% 76%, #111b16 100%);
+  clip-path: polygon(30% 0, 100% 0, 91% 42%, 79% 100%, 0 100%, 0 34%);
 }
-.door-recess {
-  position: absolute; inset: 0;
-  clip-path: var(--threshold-shape);
-  background: linear-gradient(to bottom, #3849401c, #1c2a2278 45%, #0a1411e8 95%);
-  box-shadow: inset 0 -4px #5e6a5b72;
+.foreground-threshold::before { left: 0; }
+.foreground-threshold::after { right: 0; transform: scaleX(-1); }
+.threshold-sill {
+  position: absolute; inset: auto 15px 4px; height: 11px;
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, #171e1870 3px, #eeefde22 4px),
+    linear-gradient(to bottom, var(--metal-edge), var(--metal-face) 56%, #242b24 96%);
 }
-.foreground-door::before, .foreground-door::after {
-  content: ""; position: absolute; z-index: 1; top: -17px; bottom: 0; width: 18%;
-  background: linear-gradient(180deg, #8d998acc 0 4px, #4c5b50de 5px 15px, #2b3b31de 80%, #141e18f0);
-  box-shadow: inset 0 -3px #101912b0;
-  clip-path: polygon(45% 0, 100% 0, 60% 100%, 0 100%);
-}
-.foreground-door::before { left: 0; }
-.foreground-door::after { right: 0; transform: scaleX(-1); }
 .stair-floor-plate {
   position: absolute; z-index: 1; left: 50%; top: 31%; transform: translateX(-50%);
   min-width: 42px; padding: 4px 6px; text-align: center;
@@ -247,10 +242,9 @@ dialog::backdrop { background: #040907c9; }
   background: linear-gradient(180deg, #0004, #0001 52%, #0005);
   box-shadow: inset 0 0 20px 5px #000b, 0 4px 16px 3px #0009;
 }
-.interaction-cue[data-side="south"] {
-  clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
-  background: linear-gradient(to bottom, transparent, #030806ae 40%, #030806e8 90%);
-  box-shadow: inset 0 -4px #050908c9;
+.interaction-cue[data-interaction="transition"][data-side="south"] {
+  background: radial-gradient(ellipse 49% 38% at 50% 65%, #050806ba, #05080644 60%, transparent);
+  box-shadow: none;
 }
 .interaction-cue[data-interaction="transition"]:focus-visible {
   outline-color: #b3c4ba;

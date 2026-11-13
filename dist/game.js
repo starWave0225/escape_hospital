@@ -549,40 +549,19 @@ function buildInteractionCues() {
     });
     return [interaction.id, button];
   }));
-  markers.replaceChildren(buildForegroundWall(doors), ...itemSprites, ...markerButtons.values());
+  const thresholds = doors.filter((door) => door.side === "south").map(({ outline, hallucination }) => {
+    const threshold = document.createElement("span");
+    threshold.className = "foreground-threshold";
+    if (hallucination) threshold.classList.add("hallucination-threshold");
+    threshold.setAttribute("aria-hidden", "true");
+    positionOutline(threshold, outline);
+    const sill = document.createElement("span");
+    sill.className = "threshold-sill";
+    threshold.append(sill);
+    return threshold;
+  });
+  markers.replaceChildren(...thresholds, ...itemSprites, ...markerButtons.values());
   showInteractionCue(undefined);
-}
-
-function buildForegroundWall(portals) {
-  const foreground = document.createElement("div");
-  foreground.className = "foreground-wall";
-  foreground.setAttribute("aria-hidden", "true");
-  const doors = portals.filter((door) => door.side === "south").sort((a, b) => a.x - b.x);
-  let wallStart = 0;
-  for (const { outline, hallucination } of doors) {
-    const [left, , width] = outline;
-    addWallSegment(left);
-    const doorway = document.createElement("span");
-    doorway.className = "foreground-door";
-    if (hallucination) doorway.classList.add("hallucination-door");
-    positionOutline(doorway, outline);
-    const recess = document.createElement("span");
-    recess.className = "door-recess";
-    doorway.append(recess);
-    foreground.append(doorway);
-    wallStart = left + width;
-  }
-  addWallSegment(scene.width);
-  return foreground;
-
-  function addWallSegment(end) {
-    if (end <= wallStart) return;
-    const wall = document.createElement("span");
-    wall.className = "wall-section";
-    wall.style.left = wallStart + "px";
-    wall.style.width = (end - wallStart) + "px";
-    foreground.append(wall);
-  }
 }
 
 function positionOutline(element, [left, top, width, height]) {
