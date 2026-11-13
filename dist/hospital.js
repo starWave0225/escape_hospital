@@ -105,7 +105,7 @@ const Hospital = (() => {
     for (const portal of scene.doors) {
       const south = portal.side === "south";
       portal.y = south ? scene.front : scene.back;
-      portal.outline = south ? [portal.x - 73, 554, 146, 46] : scene.outlines[portal.id];
+      portal.outline = south ? [portal.x - 73, 528, 146, 72] : scene.outlines[portal.id];
       if (art === "corridor" && !south) {
         const [left, top, width, height] = portal.outline;
         const scale = scene.width / corridorArtWidth;

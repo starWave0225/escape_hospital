@@ -451,6 +451,7 @@ function buildInteractionCues() {
     button.type = "button";
     button.className = "interaction-cue";
     button.dataset.interaction = interaction.kind || "transition";
+    if (interaction.side) button.dataset.side = interaction.side;
     positionOutline(button, interaction.outline);
     button.setAttribute("aria-label", interaction.verb === "开门" ? "开门 · " + interaction.label : interaction.label);
     button.addEventListener("click", (event) => {
@@ -471,10 +472,13 @@ function buildForegroundWall() {
   for (const { outline } of doors) {
     const [left, , width] = outline;
     addWallSegment(left);
-    const threshold = document.createElement("span");
-    threshold.className = "door-threshold";
-    positionOutline(threshold, outline);
-    foreground.append(threshold);
+    const doorway = document.createElement("span");
+    doorway.className = "foreground-door";
+    positionOutline(doorway, outline);
+    const recess = document.createElement("span");
+    recess.className = "door-recess";
+    doorway.append(recess);
+    foreground.append(doorway);
     wallStart = left + width;
   }
   addWallSegment(scene.width);
@@ -482,11 +486,11 @@ function buildForegroundWall() {
 
   function addWallSegment(end) {
     if (end <= wallStart) return;
-    const shadow = document.createElement("span");
-    shadow.className = "wall-shadow";
-    shadow.style.left = wallStart + "px";
-    shadow.style.width = (end - wallStart) + "px";
-    foreground.append(shadow);
+    const wall = document.createElement("span");
+    wall.className = "wall-section";
+    wall.style.left = wallStart + "px";
+    wall.style.width = (end - wallStart) + "px";
+    foreground.append(wall);
   }
 }
 
