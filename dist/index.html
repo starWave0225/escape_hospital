@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101815">
   <meta name="description" content="在医院的三层楼和地下室之间探索。">
-  <title>夜班之后 · 医院探索原型</title>
+  <title>地狱无门</title>
   <link rel="stylesheet" href="style.css">
   <script src="hospital.js" defer></script>
   <script src="map.js" defer></script>
@@ -17,7 +17,7 @@
       <div class="home-stage">
         <div class="home-frame" aria-hidden="true"></div>
         <div class="home-content">
-          <header class="home-title"><h1 id="game-title">夜班之后</h1></header>
+          <header class="home-title"><h1 id="game-title">地狱无门</h1></header>
           <nav id="title-menu" class="title-menu" aria-label="主菜单">
             <button type="button" class="title-menu-entry" id="new-game" disabled>开始游戏</button>
             <button type="button" class="title-menu-entry" id="continue-game" disabled>继续游戏</button>
@@ -70,11 +70,12 @@
         </div>
       </dialog>
     </main>
-    <main id="stage" class="stage" aria-label="夜班之后" hidden>
-        <p id="controls" class="sr-only">单击地面步行，双击奔跑。WASD 或方向键移动，按住 Shift 奔跑，E 交互，T 或右下角图标开关手电，B 开关背景音乐，M 地图，F 全屏。201 病房的床头柜上有电池。三楼断电时，打开手电才能奔跑。</p>
+    <main id="stage" class="stage" aria-label="地狱无门" hidden>
+        <p id="controls" class="sr-only">单击地面步行，双击奔跑。WASD 或方向键移动，按住 Shift 奔跑，J 攻击，E 交互，T 开关手电，I 背包，B 背景音乐，M 地图，F 全屏。奔跑和攻击消耗体力。三楼黑暗中会失去理智，归零即死亡。</p>
         <span id="location" class="sr-only" role="status"></span>
         <span id="flashlight-status" class="sr-only" role="status"></span>
         <span id="music-status" class="sr-only" role="status"></span>
+        <span id="combat-status" class="sr-only" role="status"></span>
         <div id="viewport" class="viewport" role="region" aria-label="游戏场景" aria-describedby="controls">
           <div id="world" class="world">
             <div id="backdrop" class="backdrop"></div>
@@ -83,6 +84,7 @@
             <div id="player" class="actor player" aria-hidden="true">
               <div class="shadow"></div>
               <canvas id="player-body" class="player-body" width="272" height="256"></canvas>
+              <span class="attack-sweep"></span>
             </div>
           </div>
           <div class="vignette"></div>
@@ -90,12 +92,30 @@
             <span class="minimap-heading" id="map-position"></span>
             <canvas id="map-canvas" width="512" height="176" aria-hidden="true"></canvas>
           </button>
-          <div class="stamina" id="stamina-display" hidden>
-            <label class="sr-only" for="stamina">体力</label>
-            <progress id="stamina" max="100" value="100"></progress>
+          <div class="status-hud" id="status-hud" aria-label="角色状态">
+            <div class="status-orb">
+              <div class="status-half sanity-half">
+                <label class="sr-only" for="sanity">理智</label>
+                <meter id="sanity" class="sr-only" min="0" max="100" value="100"></meter>
+                <span class="status-liquid"></span><span class="status-number" id="sanity-number" aria-hidden="true">100</span>
+              </div>
+              <div class="status-half stamina-half">
+                <label class="sr-only" for="stamina">体力</label>
+                <meter id="stamina" class="sr-only" min="0" max="100" value="100"></meter>
+                <span class="status-liquid"></span><span class="status-number" id="stamina-number" aria-hidden="true">100</span>
+              </div>
+            </div>
+            <div class="status-labels" aria-hidden="true"><span>理智</span><span>体力</span></div>
           </div>
           <div class="flashlight-control">
-            <button type="button" id="flashlight-toggle" class="flashlight-toggle" aria-label="手电" aria-keyshortcuts="T" aria-pressed="false" aria-describedby="battery-level" data-powered="false">
+            <button type="button" id="open-backpack" class="gear-button backpack-toggle" aria-label="打开背包" aria-keyshortcuts="I" aria-haspopup="dialog" aria-controls="backpack">
+              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5V3h6v2M5 10H3v8h2m14-8h2v8h-2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M5 8l3-3h8l3 3v12l-2 1H7l-2-1z" fill="#665039" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M5 9h14M9 9v4h6V9m-7 6h8v3H8z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button type="button" id="flashlight-toggle" class="gear-button flashlight-toggle" aria-label="手电" aria-keyshortcuts="T" aria-pressed="false" aria-describedby="battery-level" data-powered="false">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3.5 9h7l4-3h2v12h-2l-4-3h-7zM7 12h1.5"/>
                 <path class="flashlight-rays" d="M19 12h3m-3-4 2.5-1.5M19 16l2.5 1.5"/>
@@ -114,6 +134,7 @@
           </div>
           <div class="touch-actions">
             <button type="button" data-move="sprint">奔跑</button>
+            <button type="button" id="touch-attack">攻击</button>
             <button type="button" id="touch-interact">交互</button>
           </div>
         </div>
@@ -124,6 +145,20 @@
           </div>
           <div class="floors" id="floors"></div>
           <p class="map-legend"><span>◆ 你的位置</span><span>■ 已到访</span><span>↑↓ 楼梯</span></p>
+        </dialog>
+        <dialog id="death-dialog" class="death-dialog" aria-labelledby="death-title">
+          <h2 id="death-title">你已死亡</h2>
+          <p>理智耗尽</p>
+          <button type="button" class="title-menu-entry" id="restart-game">重新开始</button>
+        </dialog>
+        <dialog id="backpack" class="backpack" aria-labelledby="backpack-title">
+          <div class="dialog-bar">
+            <h2 id="backpack-title">背包</h2>
+            <span id="backpack-capacity" class="backpack-capacity"></span>
+            <button type="button" id="close-backpack" class="quiet dialog-close" aria-label="关闭背包">×</button>
+          </div>
+          <ol id="backpack-slots" class="backpack-slots" aria-label="物品栏"></ol>
+          <div class="backpack-detail" id="backpack-detail" role="status"></div>
         </dialog>
     </main>
 </body>

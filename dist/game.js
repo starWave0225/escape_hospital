@@ -13,6 +13,12 @@ const playerArt = body.getContext("2d");
 const characterButtons = [...document.querySelectorAll("[data-character]")];
 const characterArt = new Map();
 const map = get("map");
+const backpack = get("backpack");
+const deathDialog = get("death-dialog");
+const statusHud = get("status-hud");
+const sanityMeter = get("sanity");
+const sanityNumber = get("sanity-number");
+const staminaNumber = get("stamina-number");
 const touchInteract = get("touch-interact");
 const flashlightToggle = get("flashlight-toggle");
 const flashlightStatus = get("flashlight-status");
@@ -24,7 +30,6 @@ music.volume = .47;
 music.addEventListener("playing", () => { get("music-status").textContent = "背景音乐播放中"; });
 music.addEventListener("pause", () => { get("music-status").textContent = "背景音乐已暂停"; });
 const staminaMeter = get("stamina");
-const staminaDisplay = get("stamina-display");
 const movement = new Map([
   ["a", "left"], ["arrowleft", "left"], ["d", "right"], ["arrowright", "right"],
   ["w", "up"], ["arrowup", "up"], ["s", "down"], ["arrowdown", "down"],
@@ -36,11 +41,20 @@ const backdrops = new Map();
 const saveKey = "night-shift-hospital-map-v1";
 const sceneHeight = 600;
 const maxStamina = 100;
+const maxSanity = 100;
+const darknessDrain = 2;
 const sprintDrain = 26;
 const staminaRecovery = 22;
 const sprintThreshold = 25;
 const recoveryDelay = 0.6;
+const attackCost = 18;
+const attackDuration = .35;
 const batteryLifetime = 180;
+const backpackCapacity = 12;
+const batteryItem = "battery";
+const itemCatalog = {
+  [batteryItem]: { name: "备用电池", description: "手电当前的电池耗尽时自动换上，可照明约 3 分钟。" },
+};
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 let visited = new Set();
 let sceneId = start;
@@ -51,6 +65,8 @@ let stride = 0;
 let gait = "idle";
 let sprinting = false;
 let stamina = maxStamina;
+let sanity = maxSanity;
+let attackTime = 0;
 let recoveryTime = 0;
 let exhausted = false;
 let sprintReleased = true;
@@ -58,7 +74,7 @@ let nearby;
 let sceneInteractions = [];
 let starterBatteryTaken = false;
 let spareBatteryTaken = false;
-let spareBattery = false;
+let inventory = [];
 let drawerOpen = false;
 let batterySeconds = 0;
 let cabinetArt;
@@ -104,10 +120,13 @@ function readSave() {
     player.facing = saved.facing === -1 ? -1 : 1;
     player.direction = Number.isFinite(saved.direction) ? saved.direction : player.facing === 1 ? 0 : Math.PI;
     if (Number.isFinite(saved.stamina)) stamina = clamp(saved.stamina, 0, maxStamina);
+    if (Number.isFinite(saved.sanity)) sanity = clamp(saved.sanity, 0, maxSanity);
     exhausted = Boolean(saved.exhausted) && stamina < sprintThreshold;
     starterBatteryTaken = saved.starterBatteryTaken === true || saved.hasBattery === true;
     spareBatteryTaken = saved.spareBatteryTaken === true;
-    spareBattery = saved.spareBattery === true;
+    inventory = Array.isArray(saved.inventory)
+      ? saved.inventory.filter((id) => typeof id === "string" && Object.hasOwn(itemCatalog, id)).slice(0, backpackCapacity)
+      : saved.spareBattery === true ? [batteryItem] : [];
     drawerOpen = saved.drawerOpen === true || spareBatteryTaken;
     batterySeconds = Number.isFinite(saved.batterySeconds) ? clamp(saved.batterySeconds, 0, batteryLifetime)
       : starterBatteryTaken ? batteryLifetime : 0;
@@ -130,10 +149,11 @@ function save() {
       facing: player.facing,
       direction: player.direction,
       stamina,
+      sanity,
       exhausted,
       starterBatteryTaken,
       spareBatteryTaken,
-      spareBattery,
+      inventory,
       drawerOpen,
       batterySeconds,
       flashlightOn,
@@ -223,10 +243,58 @@ function updateStamina(elapsed, holdingSprint, running) {
 }
 
 function renderStamina() {
-  const percent = Math.round(stamina);
-  if (staminaMeter.value !== percent) staminaMeter.value = percent;
-  staminaDisplay.hidden = stamina >= maxStamina && !sprinting;
-  staminaDisplay.classList.toggle("exhausted", exhausted);
+  renderResource(staminaMeter, staminaNumber, stamina, maxStamina);
+}
+
+function renderResource(meter, number, amount, maximum) {
+  const value = Math.ceil(amount);
+  if (meter.value === value) return;
+  meter.value = value;
+  number.textContent = value;
+  meter.parentElement.style.setProperty("--level", (value / maximum * 100) + "%");
+}
+
+function updateSanity(elapsed) {
+  if (hasAmbientLight() || flashlightOn || elapsed === 0) return;
+  const previousValue = Math.ceil(sanity);
+  sanity = Math.max(0, sanity - darknessDrain * elapsed);
+  renderResource(sanityMeter, sanityNumber, sanity, maxSanity);
+  if (sanity === 0) showDeath();
+  if (Math.ceil(sanity) !== previousValue) save();
+}
+
+function showDeath() {
+  clearMovement();
+  setAttackTime(0);
+  statusHud.dataset.dead = "true";
+  world.classList.add("player-dead");
+  music.pause();
+  deathDialog.showModal();
+}
+
+function setAttackTime(time) {
+  attackTime = time;
+  actor.classList.toggle("attacking", time > 0);
+}
+
+function attack() {
+  if (gameMenuOpen() || changingScene || attackTime > 0) return;
+  const combatStatus = get("combat-status");
+  if (stamina < attackCost) {
+    combatStatus.textContent = "体力不足，无法攻击。";
+    return;
+  }
+  stamina = Math.max(0, stamina - attackCost);
+  recoveryTime = recoveryDelay;
+  destination = undefined;
+  gait = "idle";
+  sprinting = false;
+  actor.style.setProperty("--attack-angle", player.direction + "rad");
+  setAttackTime(attackDuration);
+  combatStatus.textContent = "攻击";
+  renderStamina();
+  render();
+  save();
 }
 
 function showInteractionCue(next) {
@@ -239,7 +307,8 @@ function showInteractionCue(next) {
 
 function updateFlashlightStatus(message) {
   const percent = Math.ceil(batterySeconds / batteryLifetime * 100);
-  const text = percent + "%" + (spareBattery ? " +1" : "");
+  const spares = inventory.filter((id) => id === batteryItem).length;
+  const text = percent + "%" + (spares ? " +" + spares : "");
   if (batteryLevel.textContent !== text) batteryLevel.textContent = text;
   batteryLevel.classList.toggle("low", percent <= 15);
   flashlightToggle.dataset.powered = String(batterySeconds > 0);
@@ -252,8 +321,9 @@ function drainBattery(elapsed) {
   const oldPercent = Math.ceil(batterySeconds / batteryLifetime * 100);
   batterySeconds = Math.max(0, batterySeconds - elapsed);
   if (batterySeconds === 0) {
-    if (spareBattery) {
-      spareBattery = false;
+    const spareIndex = inventory.indexOf(batteryItem);
+    if (spareIndex !== -1) {
+      inventory.splice(spareIndex, 1);
       batterySeconds = batteryLifetime;
       updateFlashlightStatus("已换上备用电池。");
     } else {
@@ -269,7 +339,7 @@ function drainBattery(elapsed) {
 }
 
 function toggleFlashlight() {
-  if (changingScene || map.open) return;
+  if (changingScene || gameMenuOpen()) return;
   if (!batterySeconds) {
     if (emptyFlashTimer !== undefined) return;
     emptyFlashTimer = setTimeout(() => {
@@ -335,6 +405,8 @@ function showScene(id, image, arrival) {
   HospitalMap.update(sceneId, visited);
   updateViewSize();
   renderStamina();
+  renderResource(sanityMeter, sanityNumber, sanity, maxSanity);
+  if (sanity === 0) showDeath();
   save();
 }
 
@@ -425,7 +497,7 @@ function positionOutline(element, [left, top, width, height]) {
 }
 
 async function interact(interaction = nearby) {
-  if (map.open || changingScene || !interaction) return;
+  if (gameMenuOpen() || changingScene || attackTime > 0 || !interaction) return;
   destination = undefined;
   if (interaction.kind === "item") {
     let message;
@@ -433,10 +505,14 @@ async function interact(interaction = nearby) {
       drawerOpen = true;
       message = "抽屉已打开。";
     } else {
+      if (batterySeconds > 0 && inventory.length >= backpackCapacity) {
+        updateFlashlightStatus("背包已满。");
+        return;
+      }
       if (interaction.id === "battery") starterBatteryTaken = true;
       else spareBatteryTaken = true;
       if (batterySeconds > 0) {
-        spareBattery = true;
+        inventory.push(batteryItem);
         message = "已拾取备用电池。";
       } else {
         batterySeconds = batteryLifetime;
@@ -500,7 +576,7 @@ function updateCursor() {
 }
 
 function aimAtClick(event) {
-  if (event.detail === 0 || map.open || changingScene || event.target.closest(".minimap, .flashlight-control")) return;
+  if (event.detail === 0 || gameMenuOpen() || changingScene || event.target.closest(".minimap, .flashlight-control")) return;
   if (event.detail === 1) lastClickScene = sceneId;
   if (lastClickScene !== sceneId) return;
 
@@ -521,20 +597,33 @@ function aimAtClick(event) {
 function animate(time) {
   const elapsed = Math.min((time - (frameTime ?? time)) / 1000, 0.05);
   frameTime = time;
-  if (!map.open && !changingScene) {
+  if (!gameMenuOpen() && !changingScene) {
     drainBattery(elapsed);
-    const directions = new Set([...keys].map((key) => movement.get(key)));
-    for (const direction of pointers.values()) directions.add(direction);
-    let dx = Number(directions.has("right")) - Number(directions.has("left"));
-    let dy = Number(directions.has("down")) - Number(directions.has("up"));
-    const diagonal = dx && dy ? Math.SQRT1_2 : 1;
-    const holdingSprint = sprintKeys.size > 0 || directions.has("sprint") || Boolean(destination?.sprint);
-    const canSprint = holdingSprint && (hasAmbientLight() || flashlightOn) && !exhausted && stamina > 0;
-    const speedX = canSprint ? 378 : 224;
-    const speedY = canSprint ? 204 : 132;
-    let x = clamp(player.x + dx * speedX * elapsed * diagonal, 33, scene.width - 33);
-    let y = clamp(player.y + dy * speedY * elapsed * diagonal, scene.back, scene.front);
-    if (destination) {
+    updateSanity(elapsed);
+    if (sanity > 0) {
+      if (attackTime > 0) setAttackTime(Math.max(0, attackTime - elapsed));
+      updateMovement(elapsed, time);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function updateMovement(elapsed, time) {
+  const directions = new Set();
+  if (attackTime === 0) {
+      for (const key of keys) directions.add(movement.get(key));
+      for (const direction of pointers.values()) directions.add(direction);
+  }
+  let dx = Number(directions.has("right")) - Number(directions.has("left"));
+  let dy = Number(directions.has("down")) - Number(directions.has("up"));
+  const diagonal = dx && dy ? Math.SQRT1_2 : 1;
+  const holdingSprint = sprintKeys.size > 0 || directions.has("sprint") || Boolean(destination?.sprint);
+  const canSprint = holdingSprint && (hasAmbientLight() || flashlightOn) && !exhausted && stamina > 0;
+  const speedX = canSprint ? 378 : 224;
+  const speedY = canSprint ? 204 : 132;
+  let x = clamp(player.x + dx * speedX * elapsed * diagonal, 33, scene.width - 33);
+  let y = clamp(player.y + dy * speedY * elapsed * diagonal, scene.back, scene.front);
+  if (destination && attackTime === 0) {
       const distanceX = destination.x - player.x;
       const distanceY = destination.y - player.y;
       const travelTime = Math.hypot(distanceX / speedX, distanceY / speedY);
@@ -543,34 +632,32 @@ function animate(time) {
       y = fraction === 1 ? destination.y : player.y + distanceY * fraction;
       dx = Math.sign(distanceX);
       dy = Math.sign(distanceY);
-    }
-    const moving = player.x !== x || player.y !== y;
-    const nextGait = moving ? (x !== player.x ? "side" : dy < 0 ? "back" : "front") : "idle";
-    const nextSprinting = moving && canSprint;
-    const facingChanged = gait !== nextGait || (dx && dx !== player.facing);
-    if (gait !== nextGait || sprinting !== nextSprinting) stride = 0;
-    gait = nextGait;
-    sprinting = nextSprinting;
-    if (moving) stride += Math.hypot(x - player.x, y - player.y);
-    if (dx) player.facing = dx;
-    if (dx || dy) player.direction = Math.atan2(dy, dx);
-    player.x = x;
-    player.y = y;
-    const previousStamina = stamina;
-    updateStamina(elapsed, holdingSprint, sprinting);
-    if (exhausted && destination) destination.sprint = false;
-    if (moving || previousStamina !== stamina) {
+  }
+  const moving = player.x !== x || player.y !== y;
+  const nextGait = moving ? (x !== player.x ? "side" : dy < 0 ? "back" : "front") : "idle";
+  const nextSprinting = moving && canSprint;
+  const facingChanged = gait !== nextGait || (dx && dx !== player.facing);
+  if (gait !== nextGait || sprinting !== nextSprinting) stride = 0;
+  gait = nextGait;
+  sprinting = nextSprinting;
+  if (moving) stride += Math.hypot(x - player.x, y - player.y);
+  if (dx) player.facing = dx;
+  if (dx || dy) player.direction = Math.atan2(dy, dx);
+  player.x = x;
+  player.y = y;
+  const previousStamina = stamina;
+  updateStamina(elapsed, holdingSprint, sprinting);
+  if (exhausted && destination) destination.sprint = false;
+  if (moving || previousStamina !== stamina) {
       clearTimeout(saveDelay);
       saveDelay = setTimeout(save, 200);
-    }
-    if (moving || facingChanged || dx || dy) render();
-    if (destination && x === destination.x && y === destination.y && time >= destination.enterAfter) {
+  }
+  if (moving || facingChanged || dx || dy) render();
+  if (destination && attackTime === 0 && x === destination.x && y === destination.y && time >= destination.enterAfter) {
       const { interaction } = destination;
       destination = undefined;
       if (interaction) interact(interaction);
-    }
   }
-  requestAnimationFrame(animate);
 }
 
 window.addEventListener("keydown", (event) => {
@@ -580,13 +667,13 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   const key = event.key.toLowerCase();
-  if (key === "m" && !event.repeat) {
+  if ((key === "m" || key === "i") && !event.repeat) {
     event.preventDefault();
-    if (map.open) map.close();
-    else openMap();
+    if (key === "m") toggleGameMenu(map);
+    else toggleGameMenu(backpack);
     return;
   }
-  if (map.open) return;
+  if (gameMenuOpen()) return;
   if (key === "f" && !event.repeat) {
     const action = document.fullscreenElement ? document.exitFullscreen?.() : stage.requestFullscreen?.();
     action?.catch(() => {
@@ -607,6 +694,7 @@ window.addEventListener("keydown", (event) => {
   if (event.repeat) return;
   if (key === "e") interact();
   if (key === "t") toggleFlashlight();
+  if (key === "j") attack();
   if (key === "b") {
     if (music.paused) playMusic();
     else music.pause();
@@ -648,17 +736,80 @@ viewport.addEventListener("pointerleave", () => {
   delete viewport.dataset.cursor;
 });
 touchInteract.addEventListener("click", () => interact());
+get("touch-attack").addEventListener("click", attack);
 flashlightToggle.addEventListener("click", (event) => {
   event.stopPropagation();
   toggleFlashlight();
 });
-function openMap() {
-  if (changingScene) return;
-  clearMovement();
-  map.showModal();
+function gameMenuOpen() {
+  return map.open || backpack.open || deathDialog.open;
 }
-get("minimap").addEventListener("click", openMap);
+
+function toggleGameMenu(dialog) {
+  if (dialog.open) {
+    dialog.close();
+    return;
+  }
+  if (changingScene) return;
+  if (gameMenuOpen()) return;
+  clearMovement();
+  if (dialog === backpack) renderBackpack();
+  dialog.showModal();
+}
+
+function renderBackpack() {
+  const slots = get("backpack-slots");
+  const detail = get("backpack-detail");
+  get("backpack-capacity").textContent = inventory.length + " / " + backpackCapacity;
+  detail.textContent = inventory.length ? "选择物品查看详情" : "背包是空的";
+  const entries = Array.from({ length: backpackCapacity }, (_, index) => {
+    const slot = document.createElement("li");
+    const id = inventory[index];
+    if (!id) {
+      slot.className = "backpack-slot empty";
+      slot.setAttribute("aria-label", "空格");
+      return slot;
+    }
+    slot.className = "backpack-slot";
+    const item = itemCatalog[id];
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("aria-label", item.name);
+    button.setAttribute("aria-pressed", "false");
+    const icon = document.createElement("span");
+    icon.className = "inventory-icon";
+    icon.dataset.item = id;
+    icon.setAttribute("aria-hidden", "true");
+    button.append(icon);
+    button.addEventListener("click", () => {
+      slots.querySelector('[aria-pressed="true"]')?.setAttribute("aria-pressed", "false");
+      button.setAttribute("aria-pressed", "true");
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      detail.replaceChildren(name, document.createTextNode(item.description));
+    });
+    slot.append(button);
+    return slot;
+  });
+  slots.replaceChildren(...entries);
+}
+
+get("minimap").addEventListener("click", () => toggleGameMenu(map));
 get("close-map").addEventListener("click", () => map.close());
+get("open-backpack").addEventListener("click", () => toggleGameMenu(backpack));
+get("close-backpack").addEventListener("click", () => backpack.close());
+deathDialog.addEventListener("cancel", (event) => event.preventDefault());
+get("restart-game").addEventListener("click", async () => {
+  const image = await prepareBackdrop(scenes[start].art);
+  if (!image || !deathDialog.open) return;
+  resetGame();
+  world.classList.remove("player-dead");
+  delete statusHud.dataset.dead;
+  deathDialog.close();
+  showScene(start, image);
+  updateFlashlightStatus("手电没有电");
+  playMusic();
+});
 
 function selectCharacter(id) {
   character = id;
@@ -706,10 +857,13 @@ function resetGame() {
   visited = new Set();
   player = { x: 385, y: 516, facing: 1, direction: 0 };
   stamina = maxStamina;
+  sanity = maxSanity;
+  setAttackTime(0);
   recoveryTime = 0;
   exhausted = false;
   sprintReleased = true;
-  starterBatteryTaken = spareBatteryTaken = spareBattery = drawerOpen = flashlightOn = false;
+  starterBatteryTaken = spareBatteryTaken = drawerOpen = flashlightOn = false;
+  inventory = [];
   batterySeconds = 0;
 }
 

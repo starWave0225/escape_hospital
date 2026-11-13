@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>地狱无门 · 剧情文本与玩家流程</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fcfaf5;
+      --canvas: #eeeae1;
+      --ink: #292721;
+      --muted: #5e574e;
+      --rule: #d6ccbc;
+      --accent: #813e32;
+      --serif: "Noto Serif SC", "Songti SC", SimSun, serif;
+      --sans: system-ui, "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 1rem/1.8 var(--sans); }
+    .toolbar { background: #292721; color: var(--paper); }
+    .toolbar-inner {
+      display: flex; align-items: center; flex-wrap: wrap; gap: .65rem 1.25rem;
+      max-width: 64rem; margin: auto; padding: .7rem clamp(1rem, 4vw, 2.5rem);
+    }
+    nav { display: flex; flex-wrap: wrap; gap: .35rem 1.25rem; }
+    nav a { color: inherit; text-underline-offset: .3em; }
+    .status { flex: 1; font-size: .82rem; color: #ddd3c3; }
+    button {
+      border: 1px solid #a45b4b; border-radius: .3rem; padding: .42rem .85rem;
+      color: #fffaf2; background: var(--accent); font: inherit; cursor: pointer; white-space: nowrap;
+    }
+    button:hover { background: #9b4a3a; }
+    :focus-visible { outline: 2px solid #b16a4f; outline-offset: 4px; }
+    main {
+      width: min(60rem, calc(100% - 2rem)); margin: clamp(1rem, 4vw, 2.5rem) auto;
+      padding: clamp(1.25rem, 6vw, 4.5rem); background: var(--paper); border: 1px solid var(--rule);
+    }
+    h1, h2, h3 { line-height: 1.35; text-wrap: balance; }
+    h1, h2 { font-family: var(--serif); }
+    h1 { font-size: clamp(2.65rem, 8vw, 5rem); margin: 0 0 .55rem; letter-spacing: .06em; }
+    h2 { margin: 0 0 1.35rem; font-size: clamp(1.75rem, 4vw, 2.4rem); }
+    h3 { font-size: 1.1rem; margin: 1.8rem 0 .65rem; }
+    p { margin: 0 0 .85rem; }
+    .subtitle { margin: 0; font-weight: 650; letter-spacing: .14em; color: var(--accent); }
+    .intro { margin: 1.1rem 0 0; max-width: 46rem; color: var(--muted); }
+    .sheet { margin-top: 2rem; padding-top: 1.8rem; border-top: 1px solid var(--rule); scroll-margin-top: 1rem; }
+    [contenteditable] { border-radius: .12rem; overflow-wrap: anywhere; }
+    [contenteditable]:focus { outline: 2px solid #b16a4f; outline-offset: .55rem; }
+    blockquote {
+      margin: .8rem 0 1rem; padding: .25rem 0 .25rem 1rem;
+      border-left: 3px solid var(--accent); color: #594139;
+    }
+    blockquote p { margin: .2rem 0; }
+    .stages { margin: 0; padding-left: 1.65rem; }
+    .stages li { padding-left: .25rem; }
+    .stages li::marker { color: var(--accent); font-weight: 700; }
+    .stages h3 { margin: 1.3rem 0 .45rem; }
+    .stages p { margin: .2rem 0; }
+    .notes { padding: 1rem 1.2rem; background: #f2ece0; border: 1px solid var(--rule); }
+    .notes ul { margin: 0; padding-left: 1.3rem; }
+    .notes li + li { margin-top: .45rem; }
+    @media (max-width: 38rem) {
+      .toolbar-inner { gap: .45rem 1rem; }
+      nav { flex-basis: 100%; }
+      main { width: calc(100% - 1rem); }
+    }
+    @media print {
+      .toolbar { display: none; }
+      body, main { background: #fff; }
+      main { width: 100%; margin: 0; padding: 0; border: 0; }
+      h2, h3 { break-after: avoid; }
+      [contenteditable]:focus { outline: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="toolbar-inner">
+      <nav aria-label="文档目录">
+        <a href="#story">剧情文本</a>
+        <a href="#flow">玩家流程</a>
+        <a href="#notes">待定事项</a>
+      </nav>
+      <span class="status" id="status" role="status">点击正文即可编辑。用「下载 HTML」保存文件。</span>
+      <button id="download" type="button">下载 HTML</button>
+    </div>
+  </header>
+
+  <main>
+    <header id="cover-text" contenteditable="true" spellcheck="false" aria-label="标题和故事简介" tabindex="0">
+      <h1>地狱无门</h1>
+      <p class="subtitle">剧情文本与玩家流程 · 讨论稿</p>
+      <p class="intro">留学归来的大儿子被关进市直属精神病院。他等着家人来接，直到发现家里每一个失踪的人，都曾收到过同样的承诺。</p>
+    </header>
+
+    <section id="story" class="sheet" aria-labelledby="story-heading">
+      <h2 id="story-heading">剧情文本</h2>
+      <article id="story-text" contenteditable="true" spellcheck="false" aria-label="剧情正文" tabindex="0">
+        <h3>一、201 病房</h3>
+        <p>他是在二楼 201 病房醒来的。床头柜上有一节电池。他装进手电，推门到了走廊。楼梯走得通，院门却过不去。挂号室的人查到他的名字，说他得等家属来接。</p>
+        <p>值班室里有电话。他拨给母亲，刚说了声「妈」，那头就问：「你怎么回来了？」他以为她在问回国的事，急着告诉她自己被关在什么地方。母亲听完说：「你回病房等着。晚上我去接你。」</p>
+        <p>先来看他的是叔叔。留学前，叔叔陪他办过手续，在机场还说过，有什么事直接找我。如今他真的来了，把入院时收走的手机和外套递给侄子，嘱咐他晚上带齐东西。临走前，他说医生怀疑是家族遗传，让侄子别再往外跑。</p>
+        <blockquote>
+          <p>「你见过我爸吗？」</p>
+          <p>「你爸这两天好一点了。」</p>
+          <p>叔叔起身走了。他这才想起来，自己没说过父亲病了。</p>
+        </blockquote>
+
+        <h3>二、等人来接的那个晚上</h3>
+        <p>他在二楼走廊碰见妹妹。两人刚认亲不久，她叫「哥」还有些生疏。她说父亲走的那天也收拾好了行李，叔叔说要接他回家。几天后，她被带去旧住院楼做检查，隔着门听见父亲叫她的小名。陪她的人说是她听岔了。她记得父亲叫她第二声时，咳嗽了两下。</p>
+        <p>他回值班室看晚上的安排。名单上有他的名字、接送时间和去处。母亲说的接人时间没错，去处写的是「旧住院楼」。他拿走手机，把外套留在了床上。妹妹说自己知道一段通往旧楼的路，具体出口在哪儿，得去三楼看旧平面图。</p>
+
+        <h3>三、302 档案室</h3>
+        <p>三楼停了电。他用手电在 302 找到旧平面图和几份转送记录。父亲和几个弟妹的名字先后出现在上面，联络人一栏反复出现同一个名字。叔叔一直替家里人接电话、带消息，也经手了他们每一次所谓的「离院」。他自己的名字排在最后，登记时间是回国后。</p>
+        <p>同一天的两份记录写着不同的话。父亲那份写「女儿拒绝探视」，妹妹那份写「父亲不愿见她」。叔叔替他们转达了两次。妹妹说那天她换好衣服，从晚饭前一直等到熄灯。</p>
+        <p>父亲年轻时出去打工，供弟弟念法律，出海做生意也把他带在身边，让他做公司法律顾问。主角刚回国时，叔叔提过父亲张罗认亲饭的事。他那时说：「你爸现在可好了，回来坐一桌，哪儿都是他的人。」当时叔叔说完还笑了。主角看着两张探视记录，想起父亲知道女儿「不肯来」以后，下一次探视还会不会等她。</p>
+        <p>旧图上，一条连廊从主楼通往旧住院楼，另一端能下到后院。妹妹记得父亲声音传来的那扇门。两人约好在连廊会合，趁值班的人还在 201 找他，往旧楼走。</p>
+
+        <h3>四、旧住院楼</h3>
+        <p>他们对着转送名单逐间确认。失踪的家人被分开留在旧楼，仍有一部分人在那里。父亲也在。他认出了女儿，问她那天怎么没来。妹妹说：「我来了。我在门外等你。」父亲从枕头底下摸出一张纸，上面记着几个孩子的名字和他最后听见他们声音的日期。他一直在等他们来。</p>
+        <p>他把父亲写下的日期拍进手机。妹妹把那张纸折好，放回父亲手里，说自己记住了。旧楼另一头有扇门通往后院，两人顺着旧图继续往前走。</p>
+
+        <h3>五、最后一道门</h3>
+        <p>到后院时，母亲打来了电话。她说自己已经到病房了，问他在哪儿。主角问：「爸那天，你也是这么跟他说的？」她说她跟他叔叔说好了，只要他待在国外，就轮不到他。主角刚喊了一声「妈」，她就打断了他。</p>
+        <blockquote><p>「天堂有路你不走。」</p></blockquote>
+        <p>父母离婚时他四岁。他跟着母亲和继父长大。父亲回国后，母亲常去给他打扫，回来总说他连自己都照顾不好。那时候谁都以为她在等父亲出一笔留学的钱。他也以为只要自己从国外回来，一家人总有一天能坐下来吃顿饭。</p>
+        <p>挂断电话，控制权回到玩家手里。他打开后院最后一道门，走到医院外。留学那天的录像再次出现。母亲还在朝他挥手：「过年也不用回来，我去看你。」开头曾经响过几秒的那首歌，这一次接着往下唱。</p>
+      </article>
+    </section>
+
+    <section id="flow" class="sheet" aria-labelledby="flow-heading">
+      <h2 id="flow-heading">玩家流程</h2>
+      <div id="flow-text" contenteditable="true" spellcheck="false" aria-label="玩家流程正文" tabindex="0">
+        <ol class="stages">
+          <li>
+            <h3>离开病房，试走正门</h3>
+            <p><strong>行动</strong>　从 201 醒来，拿床头电池，熟悉走路、开门和手电。下楼到 103 挂号室，尝试从正门离院。</p>
+            <p><strong>推进</strong>　正门不放行，工作人员让他联系家属。回二楼找电话。</p>
+          </li>
+          <li>
+            <h3>求助家属，等人来接</h3>
+            <p><strong>行动</strong>　在 202 值班室打给母亲，随后见到叔叔。送行录像可在这段回看，露出叔叔当年帮忙和结尾歌曲的开头。</p>
+            <p><strong>推进</strong>　两人都保证晚上有人来接。妹妹讲起父亲上一次被接走的经过，玩家可以回 202 核对自己的去处。</p>
+          </li>
+          <li>
+            <h3>发现接送终点，另找出路</h3>
+            <p><strong>行动</strong>　读到晚间接送单，发现自己的目的地是旧住院楼。和妹妹约定碰头，上三楼找旧平面图。</p>
+            <p><strong>推进</strong>　这趟接送就是父亲走过的路。玩家需要在来人前找到别的出口。接人时间用于剧情推进，实际是否加倒计时待定。</p>
+          </li>
+          <li>
+            <h3>找到连廊，核对转送记录</h3>
+            <p><strong>行动</strong>　开手电探索断电的三楼，在 302 找到旧图和转送名单，对照父亲与妹妹的探视记录。需要时可去 101 取备用电池。</p>
+            <p><strong>推进</strong>　平面图提供逃生路线。名单证实叔叔经手了历次转送，探视记录则让玩家发现他刻意让家人彼此误会。按图去连廊与妹妹会合。</p>
+          </li>
+          <li>
+            <h3>穿过旧楼，亲眼确认下落</h3>
+            <p><strong>行动</strong>　用名单确认房间，顺妹妹记得的声音找到父亲，拿到父亲写下的时间和名字。沿旧图找到通往后院的门。</p>
+            <p><strong>推进</strong>　玩家在自己逃跑的途中，查到了家人的真实去处。这里可以容纳是否带人同行的选择，具体分支待定。</p>
+          </li>
+          <li>
+            <h3>接到最后一通电话，走出医院</h3>
+            <p><strong>行动</strong>　在后院接到母亲的电话。通话结束后由玩家打开外门，走到院外。</p>
+            <p><strong>结尾</strong>　出门触发送行录像与歌曲。玩家已经知道当年那次送别对母亲意味着什么。</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="notes" class="sheet" aria-labelledby="notes-heading">
+      <h2 id="notes-heading">待定事项</h2>
+      <div id="notes-text" class="notes" contenteditable="true" spellcheck="false" aria-label="待定事项正文" tabindex="0">
+        <ul>
+          <li><strong>场景接入</strong>　201 病房、202 值班室、101 检查室、103 挂号室和 302 档案室沿用现有地图。正门离院点、电话、名单和旧图的交互，以及连廊、旧住院楼和后院出口，都按剧情草案拟新增。</li>
+          <li><strong>家庭关系</strong>　保留原配、继父、女秘书和富商晚年伴侣的背景。确认海外出生的孩子和后两段关系中的孩子是否重合，再逐个定姓名、亲缘和最后下落。遗产先作为可疑动机，叔叔和母亲各自从这件事里要什么，在后半段逐步揭开。</li>
+          <li><strong>终段线索</strong>　母亲的电话揭开她参与接送安排和送儿子出国的用意。她和叔叔有私情是原设定，具体让玩家在哪段对话或物件里证实，仍待定。</li>
+          <li><strong>离院与歌曲</strong>　确定谁能跟主角离开、留下的人如何交代，以及是否做分支结局。等歌曲确定后，再选开头露出的片段和结尾进入的时间点。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const editors = [...document.querySelectorAll('[contenteditable]')];
+    const status = document.querySelector('#status');
+    const initialText = editors.map(editor => editor.innerHTML);
+    const draftKey = 'escape-hospital-manuscript:' + location.pathname;
+
+    try {
+      const draft = JSON.parse(localStorage.getItem(draftKey));
+      if (Array.isArray(draft?.original) && draft.original.length === editors.length &&
+          draft.original.every((html, index) => html === initialText[index]) &&
+          Array.isArray(draft.edits) && draft.edits.length === editors.length &&
+          draft.edits.every(html => typeof html === 'string')) {
+        editors.forEach((editor, index) => { editor.innerHTML = draft.edits[index]; });
+        status.textContent = '已恢复本浏览器里的草稿。';
+      }
+    } catch {
+      // Downloads still work when local storage is unavailable.
+    }
+
+    document.querySelector('main').addEventListener('input', () => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          original: initialText,
+          edits: editors.map(editor => editor.innerHTML),
+        }));
+        status.textContent = '草稿已存于本浏览器。下载 HTML 可带走修改。';
+      } catch {
+        status.textContent = '请下载 HTML 保存当前修改。';
+      }
+    });
+
+    document.querySelector('#download').addEventListener('click', () => {
+      const copy = document.documentElement.cloneNode(true);
+      copy.querySelector('#status').textContent = '点击正文即可编辑。用「下载 HTML」保存文件。';
+      const html = '<!doctype html>\n' + copy.outerHTML;
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '地狱无门-剧情文本与玩家流程.html';
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      status.textContent = '已发起下载。打开下载的 HTML 可继续编辑。';
+    });
+  </script>
+</body>
+</html>
