@@ -149,13 +149,24 @@ dialog::backdrop { background: #040907c9; }
 
 
 
-.interaction-outline {
+.interaction-cue {
   position: absolute; z-index: 2; padding: 0;
+  border: 0; border-radius: 2px; background: transparent;
+}
+.interaction-cue[data-interaction="transition"] {
+  background: linear-gradient(180deg, #0004, #0001 52%, #0005);
+  box-shadow: inset 0 0 20px 5px #000b, 0 4px 16px 3px #0009;
+}
+.interaction-cue[data-interaction="transition"]:focus-visible {
+  outline-color: #b3c4ba;
+}
+.interaction-cue[data-interaction="item"] {
   border: 2px solid #ffe1a5; border-radius: 2px;
   background: #ffe1a509;
   box-shadow: inset 0 0 12px #ffcc6c60, 0 0 7px #ffce7aad, 0 0 19px #ffba4d52;
 }
-.interaction-outline:hover, .interaction-outline:focus-visible { border-color: #fff0ca; background: #ffe1a514; }
+.interaction-cue[data-interaction="item"]:hover,
+.interaction-cue[data-interaction="item"]:focus-visible { border-color: #fff0ca; background: #ffe1a514; }
 #touch-interact:disabled { opacity: .48; cursor: default; }
 
 /* Hold the flashlight steady while the walk cycle animates the legs. */

@@ -114,7 +114,7 @@ function render() {
   const next = scene.doors
     .filter((door) => Math.abs(door.x - player.x) <= 82 && Math.abs(door.y - player.y) <= 46)
     .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0];
-  if (next !== nearby) highlightInteraction(next);
+  if (next !== nearby) showInteractionCue(next);
 }
 
 function updateStamina(elapsed, holdingSprint, running) {
@@ -141,12 +141,10 @@ function renderStamina() {
   staminaDisplay.classList.toggle("exhausted", exhausted);
 }
 
-function highlightInteraction(next) {
+function showInteractionCue(next) {
   nearby = next;
   markerButtons.forEach((button, id) => {
-    const active = id === next?.id;
-    button.classList.toggle("active", active);
-    button.hidden = !active;
+    button.hidden = id !== next?.id;
   });
   touchInteract.disabled = !next;
 }
@@ -188,7 +186,8 @@ function showScene(id, arrival) {
   markerButtons = new Map(scene.doors.map((door) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "interaction-outline";
+    button.className = "interaction-cue";
+    button.dataset.interaction = "transition";
     const [left, top, width, height] = door.outline;
     button.style.left = left + "px";
     button.style.top = top + "px";
@@ -201,7 +200,7 @@ function showScene(id, arrival) {
     return [door.id, button];
   }));
   markers.replaceChildren(...markerButtons.values());
-  highlightInteraction(undefined);
+  showInteractionCue(undefined);
   HospitalMap.update(sceneId, visited);
   updateViewSize();
   renderStamina();
