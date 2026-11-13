@@ -41,6 +41,10 @@ const Hospital = (() => {
     "room-b02": { floorY: 464, doorHeight: 329, outlines: { return: [116, 131, 134, 329] } },
     "room-b03": { floorY: 469, doorHeight: 340, outlines: { return: [120, 126, 126, 340] } },
   };
+  const medicineLocations = {
+    "1F-room-2": { x: 638, y: 502, outline: [621, 307, 34, 24] },
+    "2F-room-3": { x: 323, y: 492, outline: [306, 286, 34, 24] },
+  };
 
   floors.forEach((floor, index) => {
     const { id, rooms } = floor;
@@ -79,6 +83,7 @@ const Hospital = (() => {
       const ward = roomId === start;
       const roomArt = ward ? "ward-inward" : "room-" + name.split(" ")[0].toLowerCase();
       const outline = artworkGeometry[roomArt]?.outlines?.return;
+      const medicine = medicineLocations[roomId];
       scenes[roomId] = {
         floor: id, name, art: roomArt, width: 900,
         doors: [door("return", slot === 0 ? 450 : outline[0] + outline[2] / 2, slot === 0 ? "south" : "north",
@@ -96,6 +101,12 @@ const Hospital = (() => {
           },
         }] : [],
       };
+      if (medicine) {
+        scenes[roomId].items.push({
+          id: "medicine-" + roomId, kind: "item", inventoryId: "medicine",
+          label: "拾取安神药", ...medicine,
+        });
+      }
     });
 
     const stairDoors = [door("hall", 450, "south", "返回走廊", hall, "stairs")];

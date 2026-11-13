@@ -73,8 +73,11 @@ const attackDuration = .35;
 const batteryLifetime = 180;
 const backpackCapacity = 12;
 const batteryItem = "battery";
+const medicineItem = "medicine";
+const medicineRecovery = 30;
 const itemCatalog = {
   [batteryItem]: { name: "备用电池", description: "手电当前的电池耗尽时自动换上，可照明约 3 分钟。" },
+  [medicineItem]: { name: "安神药", description: "使用后恢复 " + medicineRecovery + " 点理智。" },
 };
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 let visited = new Set();
@@ -102,6 +105,8 @@ let sceneInteractions = [];
 let starterBatteryTaken = false;
 let spareBatteryTaken = false;
 let inventory = [];
+let pickedMedicine = new Set();
+let selectedBackpackSlot = -1;
 let drawerOpen = false;
 let batterySeconds = 0;
 let cabinetArt;
@@ -161,6 +166,9 @@ function readSave() {
     inventory = Array.isArray(saved.inventory)
       ? saved.inventory.filter((id) => typeof id === "string" && Object.hasOwn(itemCatalog, id)).slice(0, backpackCapacity)
       : saved.spareBattery === true ? [batteryItem] : [];
+    if (Array.isArray(saved.pickedMedicine)) {
+      pickedMedicine = new Set(saved.pickedMedicine.filter((id) => typeof id === "string"));
+    }
     drawerOpen = saved.drawerOpen === true || spareBatteryTaken;
     batterySeconds = Number.isFinite(saved.batterySeconds) ? clamp(saved.batterySeconds, 0, batteryLifetime)
       : starterBatteryTaken ? batteryLifetime : 0;
@@ -188,6 +196,7 @@ function save() {
       starterBatteryTaken,
       spareBatteryTaken,
       inventory,
+      pickedMedicine: [...pickedMedicine],
       drawerOpen,
       batterySeconds,
       flashlightOn,
@@ -325,6 +334,12 @@ function updateSanityStage() {
   const next = sanity < 20 ? "visions" : sanity < 50 ? "unstable" : sanity < 70 ? "decay" : "clear";
   if (stage.dataset.sanity === next) return false;
   const portalsChanged = (next === "visions") !== (sanityStage === "visions");
+  if (next === "clear" || next === "decay") {
+    clearSanityEffects();
+    Quake.clearAir();
+  } else if (portalsChanged) {
+    removeFigure();
+  }
   sanityStage = next;
   stage.dataset.sanity = next;
   untilStumble = next === "clear" || next === "decay" ? 0 : 2;
@@ -669,7 +684,7 @@ function buildInteractionCues() {
       itemSprites.push(cabinet);
       if (!drawerOpen) items.push(item);
       else if (!spareBatteryTaken) items.push(item.contents);
-    } else if (!starterBatteryTaken) {
+    } else if (item.inventoryId === medicineItem ? !pickedMedicine.has(item.id) : !starterBatteryTaken) {
       items.push(item);
     }
   }
@@ -682,13 +697,18 @@ function buildInteractionCues() {
   }
   const doors = scene.doors.filter((portal) => !portal.hallucination || sanityStage === "visions");
   sceneInteractions = [...doors, ...items];
-  for (const { id, outline: [x, y] } of items) {
+  for (const { id, inventoryId, outline: [x, y, width, height] } of items) {
     if (id === "drawer") continue;
     const sprite = document.createElement("span");
-    sprite.className = "battery";
     sprite.setAttribute("aria-hidden", "true");
-    sprite.style.left = (x + 2) + "px";
-    sprite.style.top = (y + 1) + "px";
+    if (inventoryId === medicineItem) {
+      sprite.className = "medicine-pack scene-medicine";
+      positionOutline(sprite, [x + 3, y + 3, width - 6, height - 6]);
+    } else {
+      sprite.className = "battery";
+      sprite.style.left = (x + 2) + "px";
+      sprite.style.top = (y + 1) + "px";
+    }
     itemSprites.push(sprite);
   }
   markerButtons = new Map(sceneInteractions.map((interaction) => {
@@ -730,7 +750,16 @@ async function interact(interaction = nearby) {
   destination = undefined;
   if (interaction.kind === "item") {
     let message;
-    if (interaction.id === "drawer") {
+    if (interaction.inventoryId === medicineItem) {
+      const status = get("combat-status");
+      if (inventory.length >= backpackCapacity) {
+        status.textContent = "背包已满。";
+        return;
+      }
+      pickedMedicine.add(interaction.id);
+      inventory.push(medicineItem);
+      status.textContent = "安神药已放入背包。";
+    } else if (interaction.id === "drawer") {
       drawerOpen = true;
       message = "抽屉已打开。";
     } else {
@@ -990,11 +1019,14 @@ function toggleGameMenu(dialog) {
   dialog.showModal();
 }
 
-function renderBackpack() {
+function renderBackpack(message) {
   const slots = get("backpack-slots");
   const detail = get("backpack-detail");
+  const use = get("backpack-use");
+  selectedBackpackSlot = -1;
+  use.hidden = true;
   get("backpack-capacity").textContent = inventory.length + " / " + backpackCapacity;
-  detail.textContent = inventory.length ? "选择物品查看详情" : "背包是空的";
+  detail.textContent = message ?? (inventory.length ? "选择物品查看详情" : "背包是空的");
   const entries = Array.from({ length: backpackCapacity }, (_, index) => {
     const slot = document.createElement("li");
     const id = inventory[index];
@@ -1011,6 +1043,7 @@ function renderBackpack() {
     button.setAttribute("aria-pressed", "false");
     const icon = document.createElement("span");
     icon.className = "inventory-icon";
+    if (id === medicineItem) icon.classList.add("medicine-pack");
     icon.dataset.item = id;
     icon.setAttribute("aria-hidden", "true");
     button.append(icon);
@@ -1019,13 +1052,53 @@ function renderBackpack() {
       button.setAttribute("aria-pressed", "true");
       const name = document.createElement("strong");
       name.textContent = item.name;
-      detail.replaceChildren(name, document.createTextNode(item.description));
+      selectedBackpackSlot = index;
+      use.hidden = id !== medicineItem;
+      use.disabled = sanity >= maxSanity;
+      const description = id === medicineItem && use.disabled ? "理智已满。" : item.description;
+      detail.replaceChildren(name, document.createTextNode(description));
     });
     slot.append(button);
     return slot;
   });
   slots.replaceChildren(...entries);
 }
+
+get("backpack-use").addEventListener("click", async () => {
+  const slot = selectedBackpackSlot;
+  if (!backpack.open || changingScene || inventory[slot] !== medicineItem || sanity <= 0 || sanity >= maxSanity) return;
+
+  const nextSanity = Math.min(maxSanity, sanity + medicineRecovery);
+  const exit = scene.hallucination && nextSanity >= 20 ? scene.doors[0] : undefined;
+  let image;
+  if (exit) {
+    changingScene = true;
+    try {
+      image = await prepareBackdrop(scenes[exit.target].art);
+    } finally {
+      changingScene = false;
+    }
+    if (!backpack.open || selectedBackpackSlot !== slot) return;
+    if (!image) {
+      get("backpack-detail").textContent = "走廊暂未加载，请重试。";
+      return;
+    }
+  }
+
+  inventory.splice(slot, 1);
+  const restored = Math.min(medicineRecovery, maxSanity - Math.floor(sanity));
+  sanity = nextSanity;
+  if (exit) {
+    showScene(exit.target, image, exit.arrival);
+  } else {
+    renderSanity();
+    if (updateSanityStage() && scene.doors.some((portal) => portal.hallucination)) buildInteractionCues();
+    render();
+    save();
+  }
+  renderBackpack("已使用安神药，恢复 " + restored + " 点理智。" + (exit ? "幻觉消退，已回到走廊。" : ""));
+  (get("backpack-slots").querySelector("button") ?? get("close-backpack")).focus();
+});
 
 get("minimap").addEventListener("click", () => toggleGameMenu(map));
 get("close-map").addEventListener("click", () => map.close());
@@ -1101,6 +1174,7 @@ function resetGame() {
   sprintReleased = true;
   starterBatteryTaken = spareBatteryTaken = drawerOpen = flashlightOn = false;
   inventory = [];
+  pickedMedicine.clear();
   batterySeconds = 0;
 }
 
