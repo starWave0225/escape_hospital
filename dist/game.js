@@ -43,6 +43,8 @@ let exhausted = false;
 let sprintReleased = true;
 let nearby;
 let changingScene = false;
+let destination;
+let lastClickScene;
 let frameTime;
 let viewScale = 1;
 let visibleWidth = 900;
@@ -208,8 +210,8 @@ function showScene(id, panels, arrival) {
     button.style.width = width + "px";
     button.style.height = height + "px";
     button.setAttribute("aria-label", portalText(door));
-    button.addEventListener("click", () => {
-      if (nearby === door) interact();
+    button.addEventListener("click", (event) => {
+      if (event.detail === 0 && nearby === door) interact(door);
     });
     return [door.id, button];
   }));
@@ -221,9 +223,10 @@ function showScene(id, panels, arrival) {
   save();
 }
 
-async function interact() {
-  if (map.open || changingScene || !nearby) return;
-  const { target, arrival } = nearby;
+async function interact(door = nearby) {
+  if (map.open || changingScene || !door) return;
+  const { target, arrival } = door;
+  destination = undefined;
   changingScene = true;
   try {
     const panels = await prepareBackdrop(scenes[target].art);
@@ -237,6 +240,7 @@ function clearMovement() {
   keys.clear();
   sprintKeys.clear();
   pointers.clear();
+  destination = undefined;
   if (gait !== "idle") {
     gait = "idle";
     stride = 0;
@@ -245,21 +249,53 @@ function clearMovement() {
   }
 }
 
+function aimAtClick(event) {
+  if (event.detail === 0 || map.open || changingScene || event.target.closest(".minimap")) return;
+  if (event.detail === 1) lastClickScene = sceneId;
+  if (lastClickScene !== sceneId) return;
+
+  const bounds = world.getBoundingClientRect();
+  const x = (event.clientX - bounds.left) / viewScale;
+  const y = (event.clientY - bounds.top) / viewScale;
+  const door = scene.doors.find(({ outline: [left, top, width, height] }) =>
+    x >= left && x <= left + width && y >= top && y <= top + height
+  );
+  if (!door && y < scene.floorY) return;
+  destination = {
+    x: door?.x ?? clamp(x, 33, scene.width - 33),
+    y: door ? door.y + 24 : clamp(y, scene.back, scene.front),
+    door,
+    sprint: event.detail >= 2,
+    // Allow a second click before switching through a nearby doorway.
+    enterAfter: performance.now() + (event.detail === 1 ? 320 : 0),
+  };
+}
+
 function animate(time) {
   const elapsed = Math.min((time - (frameTime ?? time)) / 1000, 0.05);
   frameTime = time;
   if (!map.open && !changingScene) {
     const directions = new Set([...keys].map((key) => movement.get(key)));
     for (const direction of pointers.values()) directions.add(direction);
-    const dx = Number(directions.has("right")) - Number(directions.has("left"));
-    const dy = Number(directions.has("down")) - Number(directions.has("up"));
+    let dx = Number(directions.has("right")) - Number(directions.has("left"));
+    let dy = Number(directions.has("down")) - Number(directions.has("up"));
     const diagonal = dx && dy ? Math.SQRT1_2 : 1;
-    const holdingSprint = sprintKeys.size > 0 || directions.has("sprint");
+    const holdingSprint = sprintKeys.size > 0 || directions.has("sprint") || Boolean(destination?.sprint);
     const canSprint = holdingSprint && !exhausted && stamina > 0;
     const speedX = canSprint ? 378 : 224;
     const speedY = canSprint ? 204 : 132;
-    const x = clamp(player.x + dx * speedX * elapsed * diagonal, 33, scene.width - 33);
-    const y = clamp(player.y + dy * speedY * elapsed * diagonal, scene.back, scene.front);
+    let x = clamp(player.x + dx * speedX * elapsed * diagonal, 33, scene.width - 33);
+    let y = clamp(player.y + dy * speedY * elapsed * diagonal, scene.back, scene.front);
+    if (destination) {
+      const distanceX = destination.x - player.x;
+      const distanceY = destination.y - player.y;
+      const travelTime = Math.hypot(distanceX / speedX, distanceY / speedY);
+      const fraction = travelTime > elapsed ? elapsed / travelTime : 1;
+      x = fraction === 1 ? destination.x : player.x + distanceX * fraction;
+      y = fraction === 1 ? destination.y : player.y + distanceY * fraction;
+      dx = Math.sign(distanceX);
+      dy = Math.sign(distanceY);
+    }
     const moving = player.x !== x || player.y !== y;
     const nextGait = moving ? (x !== player.x ? "side" : dy < 0 ? "back" : "front") : "idle";
     const nextSprinting = moving && canSprint;
@@ -274,11 +310,17 @@ function animate(time) {
     player.y = y;
     const previousStamina = stamina;
     updateStamina(elapsed, holdingSprint, sprinting);
+    if (exhausted && destination) destination.sprint = false;
     if (moving || previousStamina !== stamina) {
       clearTimeout(saveDelay);
       saveDelay = setTimeout(save, 200);
     }
     if (moving || facingChanged || dx || dy) render();
+    if (destination && x === destination.x && y === destination.y && time >= destination.enterAfter) {
+      const { door } = destination;
+      destination = undefined;
+      if (door) interact(door);
+    }
   }
   requestAnimationFrame(animate);
 }
@@ -306,6 +348,7 @@ window.addEventListener("keydown", (event) => {
   }
   if (movement.has(key)) {
     event.preventDefault();
+    destination = undefined;
     keys.add(key);
     return;
   }
@@ -329,6 +372,7 @@ document.addEventListener("visibilitychange", () => {
 for (const button of document.querySelectorAll("[data-move]")) {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
+    if (button.dataset.move !== "sprint") destination = undefined;
     button.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, button.dataset.move);
   });
@@ -336,7 +380,8 @@ for (const button of document.querySelectorAll("[data-move]")) {
     button.addEventListener(type, (event) => pointers.delete(event.pointerId));
   }
 }
-touchInteract.addEventListener("click", interact);
+viewport.addEventListener("click", aimAtClick);
+touchInteract.addEventListener("click", () => interact());
 function openMap() {
   if (changingScene) return;
   clearMovement();
