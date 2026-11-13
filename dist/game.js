@@ -16,6 +16,7 @@ const map = get("map");
 const touchInteract = get("touch-interact");
 const flashlightToggle = get("flashlight-toggle");
 const flashlightStatus = get("flashlight-status");
+const flashlightHint = get("flashlight-hint");
 const batteryLevel = get("battery-level");
 const music = new Audio();
 music.loop = true;
@@ -62,6 +63,8 @@ let drawerOpen = false;
 let batterySeconds = 0;
 let cabinetArt;
 let flashlightOn = false;
+let emptyFlashTimer;
+let flashlightHintTimer;
 let changingScene = false;
 let destination;
 let lastClickScene;
@@ -161,7 +164,7 @@ function render() {
   const aim = player.direction;
   Lighting.draw({
     dark: !hasAmbientLight(),
-    enabled: flashlightOn,
+    enabled: flashlightOn || emptyFlashTimer !== undefined,
     x: (player.x - camera + Math.cos(aim) * height * .15) * viewScale,
     y: top + (player.y - height * (sprinting ? .66 : .60) + Math.sin(aim) * height * .09) * viewScale,
     direction: aim,
@@ -267,8 +270,15 @@ function drainBattery(elapsed) {
 function toggleFlashlight() {
   if (changingScene || map.open) return;
   if (!batterySeconds) {
-    updateFlashlightStatus(starterBatteryTaken ? "手电没有电。备用电池在一楼 101 室的柜子抽屉里。"
-      : "手电缺少电池。201 病房的床头柜上有电池。");
+    if (emptyFlashTimer !== undefined) return;
+    emptyFlashTimer = setTimeout(() => {
+      emptyFlashTimer = undefined;
+      render();
+    }, 160);
+    clearTimeout(flashlightHintTimer);
+    flashlightHint.textContent = starterBatteryTaken || spareBatteryTaken ? "手电没电了" : "手电缺少电池";
+    flashlightHintTimer = setTimeout(() => { flashlightHint.textContent = ""; }, 2600);
+    render();
     return;
   }
   flashlightOn = !flashlightOn;
@@ -393,6 +403,10 @@ async function interact(interaction = nearby) {
       } else {
         batterySeconds = batteryLifetime;
         flashlightOn = true;
+        clearTimeout(emptyFlashTimer);
+        emptyFlashTimer = undefined;
+        clearTimeout(flashlightHintTimer);
+        flashlightHint.textContent = "";
         message = "已装上电池，手电已开启。按 T 可开关。";
       }
     }
