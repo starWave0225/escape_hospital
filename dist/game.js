@@ -12,11 +12,23 @@ const body = get("player-body");
 const playerArt = body.getContext("2d");
 const sanityFigure = get("sanity-figure");
 const figureArt = sanityFigure.getContext("2d");
+const ghosts = [
+  { art: "ghost-patient", height: .93 },
+  { art: "ghost-gown", height: 1.04 },
+  { art: "ghost-shroud", height: .94 },
+  { art: "ghost-hollow", height: 1.08 },
+  { art: "ghost-crooked", height: 1.23 },
+  { art: "ghost-crawling", height: .65 },
+];
+const ghostArt = new Map();
 const characterButtons = [...document.querySelectorAll("[data-character]")];
 const characterArt = new Map();
 const map = get("map");
 const backpack = get("backpack");
 const deathDialog = get("death-dialog");
+const deathSequence = get("death-sequence");
+const reachingHands = [new Image(), new Image()];
+const deathDuration = 3400;
 const statusHud = get("status-hud");
 const sanityMeter = get("sanity");
 const sanityNumber = get("sanity-number");
@@ -74,7 +86,8 @@ let sanityStage = "clear";
 let untilStumble = 0;
 let stumbleTime = 0;
 let untilFigure = 0;
-let figureTime = 0;
+let figure;
+let lastGhost;
 let attackTime = 0;
 let recoveryTime = 0;
 let exhausted = false;
@@ -204,7 +217,7 @@ function render() {
     dark: !hasAmbientLight(),
     enabled: flashlightOn || emptyFlashTimer !== undefined,
     x: player.x + Math.cos(aim) * height * .15,
-    y: player.y - height * (sprinting ? .66 : .60) + Math.sin(aim) * height * .09,
+    y: player.y - height * (sprinting ? .53 : .60) + Math.sin(aim) * height * .09,
     direction: aim,
   });
 
@@ -232,7 +245,11 @@ function drawCharacter(context, id, pose, running = false, distance = 0, facing 
     context.translate(width, 0);
     context.scale(-1, 1);
   }
-  context.drawImage(image, column * width, row * height, width, height, 0, 0, width, height);
+  // The run sheets were drawn closer to the camera. Match their head and
+  // torso scale to the walk sheets, with both poses anchored at the feet.
+  const scale = running ? (view === "side" ? (id === "man" ? .8 : .75) : .91) : 1;
+  context.drawImage(image, column * width, row * height, width, height,
+    width * (1 - scale) / 2, height * (1 - scale), width * scale, height * scale);
   if (pose !== "idle" && !running) {
     const hip = Math.round(height * .53);
     context.clearRect(0, 0, width, hip);
@@ -279,7 +296,11 @@ function renderSanity() {
 function updateSanity(elapsed) {
   if (elapsed === 0) return;
   const drain = !hasAmbientLight() && !flashlightOn ? darknessDrain : sanityDrain;
-  sanity = Math.max(0, sanity - drain * elapsed);
+  loseSanity(drain * elapsed);
+}
+
+function loseSanity(amount) {
+  sanity = Math.max(0, sanity - amount);
   const valueChanged = renderSanity();
   const portalsChanged = updateSanityStage();
   if (portalsChanged && scene.doors.some((portal) => portal.hallucination)) {
@@ -310,52 +331,175 @@ function updateSanityEffects(elapsed) {
       stumbleTime = .28 + Math.random() * .17;
       untilStumble = 8 + Math.random() * 6;
       world.classList.add("stumbling");
+      const left = clamp(player.x - visibleWidth / 2, 0, Math.max(0, scene.width - visibleWidth));
+      const top = Math.max(0, sceneHeight - viewport.clientHeight / viewScale);
+      Quake.shake({
+        left, right: Math.min(scene.width, left + visibleWidth),
+        ceiling: top + 34, floor: scene.floorY,
+        playerX: player.x, strength: sanityStage === "visions" ? 1.2 : 1,
+      });
     } else if (stumbleTime > 0) {
       stumbleTime = Math.max(0, stumbleTime - elapsed);
       if (stumbleTime === 0) world.classList.remove("stumbling");
     }
   }
+  Quake.update(elapsed);
 
   untilFigure -= elapsed;
   if (untilFigure <= 0) {
-    const ghost = sanityStage === "visions";
-    const reach = Math.min(visibleWidth * .32, 360);
-    const offset = Math.cos(player.direction) < 0 ? -reach : reach;
-    const camera = clamp(player.x - visibleWidth / 2, 0, Math.max(0, scene.width - visibleWidth));
-    const left = Math.max(50, camera + visibleWidth * .15);
-    const right = Math.min(scene.width - 50, camera + visibleWidth * .85);
-    let x = clamp(player.x + offset, left, right);
-    if (Math.abs(x - player.x) < reach * .65) x = clamp(player.x - offset, left, right);
-    const height = scene.doorHeight * (ghost ? 1 : .85);
-    sanityFigure.style.left = x + "px";
-    sanityFigure.style.top = (scene.back + 7) + "px";
-    sanityFigure.style.height = height + "px";
-    sanityFigure.style.width = height * 272 / 256 + "px";
-    drawCharacter(figureArt, character === "man" ? "woman" : "man", "idle", false, 0, 1, Math.PI / 2);
-    sanityFigure.dataset.figure = ghost ? "ghost" : "patient";
-    figureTime = ghost ? .95 : 1.65;
-    untilFigure = (ghost ? 4 : 9) + Math.random() * 5;
-  } else if (figureTime > 0) {
-    figureTime = Math.max(0, figureTime - elapsed);
-    if (figureTime === 0) delete sanityFigure.dataset.figure;
+    spawnFigure();
+  } else if (figure) {
+    figure.age += elapsed;
+    if (figure.age >= figure.duration) {
+      removeFigure();
+      return;
+    }
+    if (figure.ghost && figure.age >= .36 && !figure.touched) {
+      const dx = player.x - figure.x;
+      const dy = player.y - figure.y;
+      const distance = Math.hypot(dx, dy);
+      const step = Math.min(distance, figure.speed * elapsed);
+      if (step > 0) {
+        figure.x += dx * step / distance;
+        figure.y += dy * step / distance;
+      }
+    }
+    renderFigure();
   }
+}
+
+function spawnFigure() {
+  const ghost = sanityStage === "visions";
+  const reach = Math.min(visibleWidth * .29, ghost ? 174 : 325);
+  const offset = Math.cos(player.direction) < 0 ? -reach : reach;
+  const camera = clamp(player.x - visibleWidth / 2, 0, Math.max(0, scene.width - visibleWidth));
+  const left = Math.max(40, camera + visibleWidth * .09);
+  const right = Math.min(scene.width - 40, camera + visibleWidth * .91);
+  let x = clamp(player.x + offset, left, right);
+  if (Math.abs(x - player.x) < reach * .65) x = clamp(player.x - offset, left, right);
+
+  const severity = sanity < 6 ? 2 : sanity < 13 ? 1 : 0;
+  figure = { x, y: scene.back + 7, age: 0, duration: 1.65, ghost };
+  let height = scene.doorHeight * .85;
+  if (ghost) {
+    const pool = severity === 2 ? [3, 4, 5] : severity === 1 ? [2, 3, 4] : [0, 1, 2];
+    const choices = pool.filter((index) => index !== lastGhost);
+    lastGhost = choices[Math.floor(Math.random() * choices.length)];
+    const variant = ghosts[lastGhost];
+    const image = ghostArt.get(variant.art);
+    height = scene.doorHeight * variant.height;
+    Object.assign(figure, {
+      y: clamp(player.y + (Math.random() - .5) * 40, scene.back + 3, scene.front),
+      duration: 3 + severity * .4,
+      speed: 42 + severity * 17,
+      severity,
+      touched: false,
+    });
+    const { width, height: canvasHeight } = sanityFigure;
+  const scale = Math.min(width / image.naturalWidth, canvasHeight / image.naturalHeight);
+    const spriteWidth = image.naturalWidth * scale;
+    const spriteHeight = image.naturalHeight * scale;
+    figureArt.clearRect(0, 0, width, canvasHeight);
+    figureArt.drawImage(image, (width - spriteWidth) / 2, canvasHeight - spriteHeight, spriteWidth, spriteHeight);
+  } else {
+    drawCharacter(figureArt, character === "man" ? "woman" : "man", "idle", false, 0, 1, Math.PI / 2);
+  }
+  sanityFigure.style.height = height + "px";
+  sanityFigure.style.width = height * 272 / 256 + "px";
+  sanityFigure.dataset.figure = ghost ? "ghost" : "patient";
+  untilFigure = figure.duration + (ghost ? 2.4 - severity * .5 : 7.5) + Math.random() * 3;
+  renderFigure();
+}
+
+function renderFigure() {
+  sanityFigure.style.left = figure.x + "px";
+  sanityFigure.style.top = figure.y + "px";
+  const peak = figure.ghost ? (hasAmbientLight() ? .88 : .58) : .72;
+  sanityFigure.style.opacity = peak * Math.min(1, figure.age / .36, (figure.duration - figure.age) / .42);
+}
+
+function checkGhostContact() {
+  if (!figure?.ghost || figure.touched || figure.age < .36 || figure.duration - figure.age < .22) return;
+  if (Math.abs(player.x - figure.x) > 27 || Math.abs(player.y - figure.y) > 20) return;
+
+  const severity = figure.severity;
+  figure.touched = true;
+  figure.age = Math.max(figure.age, figure.duration - .36);
+  stamina = Math.max(0, stamina - (18 + severity * 5));
+  recoveryTime = 1.6;
+  if (stamina === 0) {
+    exhausted = true;
+    sprintReleased = false;
+  }
+  renderStamina();
+  get("combat-status").textContent = "鬼影接触，理智和体力下降。";
+  loseSanity(3 + severity);
+  save();
+}
+
+function removeFigure() {
+  figure = undefined;
+  delete sanityFigure.dataset.figure;
+  sanityFigure.style.opacity = "0";
 }
 
 function clearSanityEffects() {
   stumbleTime = 0;
-  figureTime = 0;
   world.classList.remove("stumbling");
-  delete sanityFigure.dataset.figure;
+  removeFigure();
 }
 
 function showDeath() {
+  if (!deathSequence.hidden || deathDialog.open) return;
   clearMovement();
   clearSanityEffects();
+  Quake.clearAir();
   setAttackTime(0);
   statusHud.dataset.dead = "true";
   world.classList.add("player-dead");
   music.pause();
-  deathDialog.showModal();
+  get("combat-status").textContent = "理智耗尽。";
+  playDeathSequence();
+}
+
+function playDeathSequence() {
+  const crowd = [
+    [-8, 32, 4, 38, -.1], [107, 40, 94, 43, .1], [50, -24, 54, 22, .05], [34, 123, 41, 82, .35],
+    [-11, 80, 19, 69, .25], [111, 85, 81, 73, .35], [18, -19, 25, 28, .22], [82, -28, 77, 30, .31],
+    [-15, 10, 13, 14, .53], [118, 13, 92, 19, .48], [62, 129, 61, 86, .61], [40, -32, 47, 50, .59],
+    [-9, 108, 10, 91, .79], [116, 111, 89, 93, .72], [52, -20, 52, 44, .88], [74, 124, 73, 84, .91],
+  ];
+  const ghostsOnScreen = crowd.map(([fromX, fromY, toX, toY, delay], index) =>
+    deathSprite(ghostArt.get(ghosts[index % ghosts.length].art), "death-ghost",
+      { fromX, fromY, toX, toY, delay, angle: (index % 5 - 2) * 6 }));
+  const handsOnScreen = [
+    [1, 103, 29, 50, 1.08, -30], [108, 111, 77, 54, 1.34, 27], [75, -28, 57, 39, 1.55, 151],
+    [-14, 47, 20, 36, 1.7, -64], [99, 1, 83, 25, 1.9, 82], [47, 124, 52, 61, 2.04, -7],
+  ].map(([fromX, fromY, toX, toY, delay, angle], index) =>
+    deathSprite(reachingHands[index % reachingHands.length], "death-hand",
+      { fromX, fromY, toX, toY, delay, angle }));
+
+  deathSequence.replaceChildren(...ghostsOnScreen, ...handsOnScreen);
+  deathSequence.hidden = false;
+  viewport.inert = true;
+  setTimeout(() => {
+    deathSequence.hidden = true;
+    deathSequence.replaceChildren();
+    deathDialog.showModal();
+  }, deathDuration);
+}
+
+function deathSprite(source, className, { fromX, fromY, toX, toY, delay, angle }) {
+  const sprite = source.cloneNode();
+  sprite.className = className;
+  sprite.alt = "";
+  sprite.style.left = toX + "%";
+  sprite.style.top = toY + "%";
+  sprite.style.setProperty("--start-x", (fromX - toX) + "vw");
+  sprite.style.setProperty("--start-y", (fromY - toY) + "dvh");
+  sprite.style.setProperty("--angle", angle + "deg");
+  sprite.style.animationDelay = Math.max(0, delay) + "s";
+  return sprite;
 }
 
 function setAttackTime(time) {
@@ -483,6 +627,7 @@ function showScene(id, image, arrival) {
   world.style.width = scene.width + "px";
   world.classList.toggle("dark", !hasAmbientLight());
   Lighting.resize(scene.width, sceneHeight);
+  Quake.enter(id, scene.width, sceneHeight);
   backdrop.dataset.floor = scene.floor;
   backdrop.dataset.art = scene.art;
   backdrop.classList.toggle("mirrored", Boolean(scene.mirrored));
@@ -721,6 +866,8 @@ function updateMovement(elapsed, time) {
   if (dx || dy) player.direction = Math.atan2(dy, dx);
   player.x = x;
   player.y = y;
+  checkGhostContact();
+  if (sanity === 0) return;
   const previousStamina = stamina;
   updateStamina(elapsed, holdingSprint, sprinting);
   if (exhausted && destination) destination.sprint = false;
@@ -818,7 +965,7 @@ flashlightToggle.addEventListener("click", (event) => {
   toggleFlashlight();
 });
 function gameMenuOpen() {
-  return map.open || backpack.open || deathDialog.open;
+  return map.open || backpack.open || deathDialog.open || !deathSequence.hidden;
 }
 
 function toggleGameMenu(dialog) {
@@ -881,7 +1028,9 @@ get("restart-game").addEventListener("click", async () => {
   resetGame();
   world.classList.remove("player-dead");
   delete statusHud.dataset.dead;
+  get("combat-status").textContent = "";
   deathDialog.close();
+  viewport.inert = false;
   showScene(start, image);
   updateFlashlightStatus("手电没有电");
   playMusic();
@@ -934,6 +1083,8 @@ function resetGame() {
   player = { x: 385, y: 516, facing: 1, direction: 0 };
   stamina = maxStamina;
   sanity = maxSanity;
+  lastGhost = undefined;
+  Quake.reset();
   setAttackTime(0);
   recoveryTime = 0;
   exhausted = false;
@@ -1005,6 +1156,15 @@ async function loadAssets() {
     }
   }
   assets.push(prepareCabinet(), prepareMusic(), prepareTitleArtwork());
+  for (const { art } of ghosts) {
+    const image = new Image();
+    image.src = "assets/" + art + ".webp";
+    assets.push(image.decode().then(() => ghostArt.set(art, image)));
+  }
+  reachingHands.forEach((image, index) => {
+    if (!image.src) image.src = "assets/ghost-hand-" + (index + 1) + ".webp";
+    assets.push(image.decode().then(() => image));
+  });
   for (const button of characterButtons) {
     const id = button.dataset.character;
     assets.push(prepareCharacter(id, "walk").then((image) => {

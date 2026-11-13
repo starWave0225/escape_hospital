@@ -10,6 +10,7 @@
   <script src="hospital.js" defer></script>
   <script src="map.js" defer></script>
   <script src="lighting.js" defer></script>
+  <script src="quake.js" defer></script>
   <script src="game.js" defer></script>
 </head>
 <body>
@@ -76,9 +77,11 @@
         <span id="flashlight-status" class="sr-only" role="status"></span>
         <span id="music-status" class="sr-only" role="status"></span>
         <span id="combat-status" class="sr-only" role="status"></span>
+        <div id="death-sequence" class="death-sequence" aria-hidden="true" hidden></div>
         <div id="viewport" class="viewport" role="region" aria-label="游戏场景" aria-describedby="controls">
           <div id="world" class="world">
             <div id="backdrop" class="backdrop"></div>
+            <canvas id="quake" class="quake" aria-hidden="true"></canvas>
             <div id="markers" class="markers"></div>
             <canvas id="sanity-figure" class="sanity-figure" width="272" height="256" aria-hidden="true"></canvas>
             <canvas id="lighting" class="lighting" aria-hidden="true" hidden></canvas>
