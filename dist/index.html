@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101815">
+  <meta name="description" content="在医院的三层楼和地下室之间探索。">
+  <title>夜班之后 · 医院探索原型</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="hospital.js" defer></script>
+  <script src="map.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+    <main id="stage" class="stage" aria-label="夜班之后">
+        <p id="controls" class="sr-only">WASD 或方向键移动，按住 Shift 奔跑，E 开门，M 地图，F 全屏。</p>
+        <span id="location" class="sr-only" role="status"></span>
+        <div id="viewport" class="viewport" role="region" aria-label="游戏场景" aria-describedby="controls">
+          <div id="world" class="world">
+            <div id="backdrop" class="backdrop"></div>
+            <div id="markers" class="markers"></div>
+            <div id="player" class="actor player" aria-hidden="true">
+              <div class="shadow"></div>
+              <div class="player-body"><div class="walk-torso"></div></div>
+            </div>
+          </div>
+          <div class="vignette"></div>
+          <button id="minimap" type="button" class="minimap" aria-label="展开医院地图" aria-haspopup="dialog">
+            <span class="minimap-heading" id="map-position"></span>
+            <canvas id="map-canvas" width="512" height="176" aria-hidden="true"></canvas>
+          </button>
+          <div class="stamina" id="stamina-display" hidden>
+            <label class="sr-only" for="stamina">体力</label>
+            <progress id="stamina" max="100" value="100"></progress>
+          </div>
+        </div>
+        <div class="touch-controls" aria-label="触屏操作">
+          <div class="dpad">
+            <button type="button" class="up" data-move="up" aria-label="向上">↑</button>
+            <button type="button" class="left" data-move="left" aria-label="向左">←</button>
+            <button type="button" class="down" data-move="down" aria-label="向下">↓</button>
+            <button type="button" class="right" data-move="right" aria-label="向右">→</button>
+          </div>
+          <div class="touch-actions">
+            <button type="button" data-move="sprint">奔跑</button>
+            <button type="button" id="touch-interact">交互</button>
+          </div>
+        </div>
+        <dialog id="map" aria-labelledby="map-title">
+          <div class="dialog-bar">
+            <span id="map-title">医院地图</span>
+            <button type="button" id="close-map" class="quiet" aria-label="关闭地图">×</button>
+          </div>
+          <div class="floors" id="floors"></div>
+          <p class="map-legend"><span>◆ 你的位置</span><span>■ 已到访</span><span>↑↓ 楼梯</span></p>
+        </dialog>
+    </main>
+</body>
+</html>
