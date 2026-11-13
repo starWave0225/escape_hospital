@@ -207,7 +207,7 @@ function render() {
   actor.style.left = player.x + "px";
   actor.style.top = player.y + "px";
   const depth = (player.y - scene.back) / (scene.front - scene.back);
-  const height = scene.doorHeight * (character === "man" ? .80 : .76) * (1 + (player.y - scene.floorY) / 1000);
+  const height = scene.doorHeight * (character === "man" ? .85 : .81);
   actor.style.height = height + "px";
   actor.style.width = height * 272 / 256 + "px";
   drawCharacter(playerArt, character, gait, sprinting, stride, player.facing, player.direction);
@@ -217,7 +217,7 @@ function render() {
     dark: !hasAmbientLight(),
     enabled: flashlightOn || emptyFlashTimer !== undefined,
     x: player.x + Math.cos(aim) * height * .15,
-    y: player.y - height * (sprinting ? .53 : .60) + Math.sin(aim) * height * .09,
+    y: player.y - height * .60 + Math.sin(aim) * height * .09,
     direction: aim,
   });
 
@@ -236,24 +236,23 @@ function drawCharacter(context, id, pose, running = false, distance = 0, facing 
     ? Math.abs(Math.sin(direction)) > .92 ? (direction < 0 ? "back" : "front") : "side"
     : pose;
   const row = { side: 0, front: 1, back: 2 }[view];
-  const frame = Math.floor(distance / (view === "side" ? (running ? 45 : 29) : (running ? 27 : 20))) % 4;
-  const column = pose === "idle" ? 0 : running ? frame : walkCycle[frame];
-  const image = characterArt.get(id + "-" + (running ? "run" : "walk"));
+  const frame = Math.floor(distance / (view === "side" ? 29 : 20)) % walkCycle.length;
+  const image = characterArt.get(id);
   context.clearRect(0, 0, width, height);
   context.save();
   if (view === "side" && facing < 0) {
     context.translate(width, 0);
     context.scale(-1, 1);
   }
-  // The run sheets were drawn closer to the camera. Match their head and
-  // torso scale to the walk sheets, with both poses anchored at the feet.
-  const scale = running ? (view === "side" ? (id === "man" ? .8 : .75) : .91) : 1;
-  context.drawImage(image, column * width, row * height, width, height,
-    width * (1 - scale) / 2, height * (1 - scale), width * scale, height * scale);
-  if (pose !== "idle" && !running) {
+  if (pose === "idle") {
+    context.drawImage(image, 0, row * height, width, height, 0, 0, width, height);
+  } else {
     const hip = Math.round(height * .53);
-    context.clearRect(0, 0, width, hip);
+    // Lean from the hips without scaling the torso or moving the feet.
+    if (running && view === "side") context.transform(1, 0, -.12, 1, hip * .12, 0);
     context.drawImage(image, width, row * height, width, hip, 0, 0, width, hip);
+    context.drawImage(image, walkCycle[frame] * width, row * height + hip, width, height - hip,
+      0, hip, width, height - hip);
   }
   context.restore();
 }
@@ -858,10 +857,10 @@ function updateMovement(elapsed, time) {
   const nextGait = moving ? (x !== player.x ? "side" : dy < 0 ? "back" : "front") : "idle";
   const nextSprinting = moving && canSprint;
   const facingChanged = gait !== nextGait || (dx && dx !== player.facing);
-  if (gait !== nextGait || sprinting !== nextSprinting) stride = 0;
+  if (gait !== nextGait) stride = 0;
   gait = nextGait;
   sprinting = nextSprinting;
-  if (moving) stride += Math.hypot(x - player.x, y - player.y);
+  if (moving) stride += Math.hypot(x - player.x, y - player.y) * (sprinting ? 1.16 : 1);
   if (dx) player.facing = dx;
   if (dx || dy) player.direction = Math.atan2(dy, dx);
   player.x = x;
@@ -1094,13 +1093,12 @@ function resetGame() {
   batterySeconds = 0;
 }
 
-async function prepareCharacter(id, pace) {
-  const key = id + "-" + pace;
-  if (characterArt.has(key)) return characterArt.get(key);
+async function prepareCharacter(id) {
+  if (characterArt.has(id)) return characterArt.get(id);
   const image = new Image();
-  image.src = "assets/" + key + (pace === "run" ? "-clean" : "") + ".webp";
+  image.src = "assets/" + id + "-walk.webp";
   await image.decode();
-  characterArt.set(key, image);
+  characterArt.set(id, image);
   return image;
 }
 
@@ -1167,11 +1165,11 @@ async function loadAssets() {
   });
   for (const button of characterButtons) {
     const id = button.dataset.character;
-    assets.push(prepareCharacter(id, "walk").then((image) => {
+    assets.push(prepareCharacter(id).then((image) => {
       const canvas = button.querySelector("canvas");
       canvas.getContext("2d").drawImage(image, 0, canvas.height, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
       return image;
-    }), prepareCharacter(id, "run"));
+    }));
   }
   progress.max = assets.length;
   progress.value = 0;
