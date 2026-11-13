@@ -48,6 +48,10 @@ const Hospital = (() => {
       scenes[roomId] = {
         floor: id, name, art: ward ? "ward" : "room", width: 900,
         doors: [door("return", ward ? 787 : 160, "返回走廊", hall, "room-" + (slot + 1))],
+        items: ward ? [{
+          id: "battery", kind: "item", label: "拾取电池",
+          x: 349, y: 490, outline: [336, 346, 28, 17],
+        }] : [],
       };
     });
 

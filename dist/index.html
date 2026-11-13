@@ -9,21 +9,48 @@
   <link rel="stylesheet" href="style.css">
   <script src="hospital.js" defer></script>
   <script src="map.js" defer></script>
+  <script src="lighting.js" defer></script>
   <script src="game.js" defer></script>
 </head>
 <body>
-    <main id="stage" class="stage" aria-label="夜班之后">
-        <p id="controls" class="sr-only">单击地面步行，双击奔跑，点击门或楼梯可走过去进入。WASD 或方向键移动，按住 Shift 奔跑，E 开门，M 地图，F 全屏。</p>
+    <main id="home" class="home" aria-labelledby="game-title">
+      <div class="home-content">
+        <header class="home-title"><h1 id="game-title">夜班之后</h1></header>
+        <section aria-labelledby="character-label">
+          <h2 id="character-label">选择主角</h2>
+          <div class="character-options">
+            <button type="button" class="character-option" data-character="man" aria-pressed="false">
+              <canvas width="272" height="256" aria-hidden="true"></canvas><span>男</span>
+            </button>
+            <button type="button" class="character-option" data-character="woman" aria-pressed="false">
+              <canvas width="272" height="256" aria-hidden="true"></canvas><span>女</span>
+            </button>
+          </div>
+        </section>
+        <div class="home-entry">
+          <div id="asset-loading" class="asset-loading">
+            <progress id="asset-progress" aria-label="素材加载进度"></progress>
+            <p id="asset-status" role="status">正在加载游戏素材</p>
+          </div>
+          <button type="button" id="enter-game" class="enter-game" disabled>进入医院</button>
+          <button type="button" id="retry-assets" class="quiet" hidden>重新加载</button>
+        </div>
+      </div>
+    </main>
+    <main id="stage" class="stage" aria-label="夜班之后" hidden>
+        <p id="controls" class="sr-only">单击地面步行，双击奔跑。WASD 或方向键移动，按住 Shift 奔跑，E 交互，L 开关手电，M 地图，F 全屏。201 病房的床头柜上有电池。</p>
         <span id="location" class="sr-only" role="status"></span>
+        <span id="flashlight-status" class="sr-only" role="status"></span>
         <div id="viewport" class="viewport" role="region" aria-label="游戏场景" aria-describedby="controls">
           <div id="world" class="world">
             <div id="backdrop" class="backdrop"></div>
             <div id="markers" class="markers"></div>
             <div id="player" class="actor player" aria-hidden="true">
               <div class="shadow"></div>
-              <div class="player-body"><div class="walk-torso"></div></div>
+              <canvas id="player-body" class="player-body" width="272" height="256"></canvas>
             </div>
           </div>
+          <canvas id="lighting" class="lighting" aria-hidden="true" hidden></canvas>
           <div class="vignette"></div>
           <button id="minimap" type="button" class="minimap" aria-label="展开医院地图" aria-haspopup="dialog">
             <span class="minimap-heading" id="map-position"></span>
@@ -44,6 +71,7 @@
           <div class="touch-actions">
             <button type="button" data-move="sprint">奔跑</button>
             <button type="button" id="touch-interact">交互</button>
+            <button type="button" id="touch-flashlight" aria-pressed="false" hidden>手电</button>
           </div>
         </div>
         <dialog id="map" aria-labelledby="map-title">

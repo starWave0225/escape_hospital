@@ -8,9 +8,14 @@ const world = get("world");
 const backdrop = get("backdrop");
 const markers = get("markers");
 const actor = get("player");
-const body = actor.querySelector(".player-body");
+const body = get("player-body");
+const playerArt = body.getContext("2d");
+const characterButtons = [...document.querySelectorAll("[data-character]")];
+const characterArt = new Map();
 const map = get("map");
 const touchInteract = get("touch-interact");
+const touchFlashlight = get("touch-flashlight");
+const flashlightStatus = get("flashlight-status");
 const staminaMeter = get("stamina");
 const staminaDisplay = get("stamina-display");
 const movement = new Map([
@@ -42,6 +47,9 @@ let recoveryTime = 0;
 let exhausted = false;
 let sprintReleased = true;
 let nearby;
+let sceneInteractions = [];
+let hasBattery = false;
+let flashlightOn = false;
 let changingScene = false;
 let destination;
 let lastClickScene;
@@ -49,11 +57,19 @@ let frameTime;
 let viewScale = 1;
 let visibleWidth = 900;
 let saveDelay;
+let character;
+let assetsReady = false;
+let gameStarted = false;
+let savedGame = false;
 
 function readSave() {
   try {
     const saved = JSON.parse(localStorage.getItem(saveKey));
     if (!saved || !Object.hasOwn(scenes, saved.scene)) return;
+    savedGame = true;
+    if (characterButtons.some((button) => button.dataset.character === saved.character)) {
+      character = saved.character;
+    }
     sceneId = saved.scene;
     if (Array.isArray(saved.visited)) {
       visited = new Set(saved.visited.filter((id) => Object.hasOwn(scenes, id)));
@@ -66,6 +82,8 @@ function readSave() {
     player.direction = Number.isFinite(saved.direction) ? saved.direction : player.facing === 1 ? 0 : Math.PI;
     if (Number.isFinite(saved.stamina)) stamina = clamp(saved.stamina, 0, maxStamina);
     exhausted = Boolean(saved.exhausted) && stamina < sprintThreshold;
+    hasBattery = saved.hasBattery === true;
+    flashlightOn = hasBattery && saved.flashlightOn === true;
   } catch {
     // Storage may be unavailable in private browsing or a local file.
   }
@@ -73,6 +91,7 @@ function readSave() {
 
 function save() {
   clearTimeout(saveDelay);
+  if (!gameStarted) return;
   try {
     localStorage.setItem(saveKey, JSON.stringify({
       scene: sceneId,
@@ -83,6 +102,9 @@ function save() {
       direction: player.direction,
       stamina,
       exhausted,
+      hasBattery,
+      flashlightOn,
+      character,
     }));
   } catch {
     // The current session can continue without storage.
@@ -92,6 +114,7 @@ function save() {
 function updateViewSize() {
   viewScale = Math.max(viewport.clientHeight / sceneHeight, viewport.clientWidth / scene.width) || 1;
   visibleWidth = viewport.clientWidth / viewScale;
+  Lighting.resize(viewport.clientWidth, viewport.clientHeight);
   render();
 }
 
@@ -103,22 +126,51 @@ function render() {
   actor.style.left = player.x + "px";
   actor.style.top = player.y + "px";
   const depth = (player.y - scene.back) / (scene.front - scene.back);
-  const height = scene.doorHeight * 0.76 * (1 + (player.y - scene.floorY) / 1000);
+  const height = scene.doorHeight * (character === "man" ? .80 : .76) * (1 + (player.y - scene.floorY) / 1000);
   actor.style.height = height + "px";
   actor.style.width = height * 272 / 256 + "px";
-  const frames = gait === "side" ? 8 : 4;
-  const stepLength = gait === "side" ? (sprinting ? 25 : 17) : (sprinting ? 18 : 14);
-  const index = Math.floor(stride / stepLength) % frames;
-  body.dataset.gait = gait;
-  body.dataset.sprinting = String(sprinting);
-  body.style.backgroundPosition = gait === "idle" ? "center bottom" : (100 * index / (frames - 1)) + "% center";
-  body.style.transform = gait === "front" || gait === "back" ? "" : "scaleX(" + player.facing + ")";
+  drawCharacter(playerArt, character, gait, sprinting, stride, player.facing, player.direction);
   HospitalMap.draw(sceneId, visited, { x: player.x, depth, direction: player.direction });
+  const aim = player.direction;
+  Lighting.draw({
+    dark: scene.floor === "3F",
+    enabled: flashlightOn,
+    x: (player.x - camera + Math.cos(aim) * height * .15) * viewScale,
+    y: top + (player.y - height * (sprinting ? .66 : .60) + Math.sin(aim) * height * .09) * viewScale,
+    direction: aim,
+    scale: viewScale,
+  });
 
-  const next = scene.doors
-    .filter((door) => Math.abs(door.x - player.x) <= 82 && Math.abs(door.y - player.y) <= 46)
+  const next = sceneInteractions
+    .filter((interaction) => Math.abs(interaction.x - player.x) <= (interaction.kind === "item" ? 55 : 82) &&
+      Math.abs(interaction.y - player.y) <= 46)
     .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0];
   if (next !== nearby) showInteractionCue(next);
+}
+
+function drawCharacter(context, id, pose, running = false, distance = 0, facing = 1, direction = 0) {
+  const { width, height } = context.canvas;
+  const walkCycle = [1, 2, 3, 2];
+  const view = pose === "idle"
+    ? Math.abs(Math.sin(direction)) > .92 ? (direction < 0 ? "back" : "front") : "side"
+    : pose;
+  const row = { side: 0, front: 1, back: 2 }[view];
+  const frame = Math.floor(distance / (view === "side" ? (running ? 45 : 29) : (running ? 27 : 20))) % 4;
+  const column = pose === "idle" ? 0 : running ? frame : walkCycle[frame];
+  const image = characterArt.get(id + "-" + (running ? "run" : "walk"));
+  context.clearRect(0, 0, width, height);
+  context.save();
+  if (view === "side" && facing < 0) {
+    context.translate(width, 0);
+    context.scale(-1, 1);
+  }
+  context.drawImage(image, column * width, row * height, width, height, 0, 0, width, height);
+  if (pose !== "idle" && !running) {
+    const hip = Math.round(height * .53);
+    context.clearRect(0, 0, width, hip);
+    context.drawImage(image, width, row * height, width, hip, 0, 0, width, hip);
+  }
+  context.restore();
 }
 
 function updateStamina(elapsed, holdingSprint, running) {
@@ -153,8 +205,22 @@ function showInteractionCue(next) {
   touchInteract.disabled = !next;
 }
 
-function portalText(portal) {
-  return portal.verb === "开门" ? "开门 · " + portal.label : portal.label;
+function updateFlashlightStatus(message) {
+  touchFlashlight.hidden = !hasBattery;
+  touchFlashlight.setAttribute("aria-pressed", String(flashlightOn));
+  flashlightStatus.textContent = message || (flashlightOn ? "手电已开启" : "手电已关闭");
+}
+
+function toggleFlashlight() {
+  if (changingScene || map.open) return;
+  if (!hasBattery) {
+    updateFlashlightStatus("手电缺少电池。201 病房的床头柜上有电池。");
+    return;
+  }
+  flashlightOn = !flashlightOn;
+  updateFlashlightStatus();
+  render();
+  save();
 }
 
 function prepareBackdrop(art) {
@@ -197,36 +263,60 @@ function showScene(id, panels, arrival) {
   get("location").textContent = "住院部 / " + scene.name;
   world.style.width = scene.width + "px";
   backdrop.dataset.floor = scene.floor;
+  backdrop.dataset.art = scene.art;
   backdrop.replaceChildren(...panels);
 
-  markerButtons = new Map(scene.doors.map((door) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "interaction-cue";
-    button.dataset.interaction = "transition";
-    const [left, top, width, height] = door.outline;
-    button.style.left = left + "px";
-    button.style.top = top + "px";
-    button.style.width = width + "px";
-    button.style.height = height + "px";
-    button.setAttribute("aria-label", portalText(door));
-    button.addEventListener("click", (event) => {
-      if (event.detail === 0 && nearby === door) interact(door);
-    });
-    return [door.id, button];
-  }));
-  markers.replaceChildren(...markerButtons.values());
-  showInteractionCue(undefined);
+  buildInteractionCues();
   HospitalMap.update(sceneId, visited);
   updateViewSize();
   renderStamina();
   save();
 }
 
-async function interact(door = nearby) {
-  if (map.open || changingScene || !door) return;
-  const { target, arrival } = door;
+function buildInteractionCues() {
+  const items = (scene.items || []).filter((item) => item.id !== "battery" || !hasBattery);
+  sceneInteractions = [...scene.doors, ...items];
+  const itemSprites = items.map(({ outline: [x, y] }) => {
+    const sprite = document.createElement("span");
+    sprite.className = "battery";
+    sprite.setAttribute("aria-hidden", "true");
+    sprite.style.left = (x + 2) + "px";
+    sprite.style.top = (y + 1) + "px";
+    return sprite;
+  });
+  markerButtons = new Map(sceneInteractions.map((interaction) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "interaction-cue";
+    button.dataset.interaction = interaction.kind || "transition";
+    const [left, top, width, height] = interaction.outline;
+    button.style.left = left + "px";
+    button.style.top = top + "px";
+    button.style.width = width + "px";
+    button.style.height = height + "px";
+    button.setAttribute("aria-label", interaction.verb === "开门" ? "开门 · " + interaction.label : interaction.label);
+    button.addEventListener("click", (event) => {
+      if (event.detail === 0 && nearby === interaction) interact(interaction);
+    });
+    return [interaction.id, button];
+  }));
+  markers.replaceChildren(...itemSprites, ...markerButtons.values());
+  showInteractionCue(undefined);
+}
+
+async function interact(interaction = nearby) {
+  if (map.open || changingScene || !interaction) return;
   destination = undefined;
+  if (interaction.id === "battery" && !hasBattery) {
+    hasBattery = true;
+    flashlightOn = true;
+    buildInteractionCues();
+    updateFlashlightStatus("已装上电池，手电已开启。按 L 可开关。");
+    render();
+    save();
+    return;
+  }
+  const { target, arrival } = interaction;
   changingScene = true;
   try {
     const panels = await prepareBackdrop(scenes[target].art);
@@ -257,14 +347,14 @@ function aimAtClick(event) {
   const bounds = world.getBoundingClientRect();
   const x = (event.clientX - bounds.left) / viewScale;
   const y = (event.clientY - bounds.top) / viewScale;
-  const door = scene.doors.find(({ outline: [left, top, width, height] }) =>
+  const interaction = sceneInteractions.find(({ outline: [left, top, width, height] }) =>
     x >= left && x <= left + width && y >= top && y <= top + height
   );
-  if (!door && y < scene.floorY) return;
+  if (!interaction && y < scene.floorY) return;
   destination = {
-    x: door?.x ?? clamp(x, 33, scene.width - 33),
-    y: door ? door.y + 24 : clamp(y, scene.back, scene.front),
-    door,
+    x: interaction?.x ?? clamp(x, 33, scene.width - 33),
+    y: interaction ? interaction.y + 24 : clamp(y, scene.back, scene.front),
+    interaction,
     sprint: event.detail >= 2,
     // Allow a second click before switching through a nearby doorway.
     enterAfter: performance.now() + (event.detail === 1 ? 320 : 0),
@@ -317,16 +407,16 @@ function animate(time) {
     }
     if (moving || facingChanged || dx || dy) render();
     if (destination && x === destination.x && y === destination.y && time >= destination.enterAfter) {
-      const { door } = destination;
+      const { interaction } = destination;
       destination = undefined;
-      if (door) interact(door);
+      if (interaction) interact(interaction);
     }
   }
   requestAnimationFrame(animate);
 }
 
 window.addEventListener("keydown", (event) => {
-  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (!gameStarted || event.ctrlKey || event.metaKey || event.altKey) return;
   const key = event.key.toLowerCase();
   if (key === "m" && !event.repeat) {
     event.preventDefault();
@@ -354,6 +444,7 @@ window.addEventListener("keydown", (event) => {
   }
   if (event.repeat) return;
   if (key === "e") interact();
+  if (key === "l") toggleFlashlight();
 });
 
 window.addEventListener("keyup", (event) => {
@@ -382,6 +473,7 @@ for (const button of document.querySelectorAll("[data-move]")) {
 }
 viewport.addEventListener("click", aimAtClick);
 touchInteract.addEventListener("click", () => interact());
+touchFlashlight.addEventListener("click", toggleFlashlight);
 function openMap() {
   if (changingScene) return;
   clearMovement();
@@ -390,22 +482,75 @@ function openMap() {
 get("minimap").addEventListener("click", openMap);
 get("close-map").addEventListener("click", () => map.close());
 
-readSave();
-changingScene = true;
-const initialBackdrop = prepareBackdrop(scenes[sceneId].art);
-for (const art of new Set(Object.values(scenes).map((entry) => entry.art))) {
-  prepareBackdrop(art);
+function selectCharacter(id) {
+  character = id;
+  for (const button of characterButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.character === id));
+  }
+  get("enter-game").disabled = !assetsReady || !character;
 }
-initialBackdrop.then((panels) => {
-  if (!panels) return;
+
+async function prepareCharacter(id, pace) {
+  const key = id + "-" + pace;
+  if (characterArt.has(key)) return characterArt.get(key);
+  const image = new Image();
+  image.src = "assets/" + key + ".webp";
+  await image.decode();
+  characterArt.set(key, image);
+  return image;
+}
+
+async function loadAssets() {
+  const progress = get("asset-progress");
+  const status = get("asset-status");
+  const retry = get("retry-assets");
+  retry.hidden = true;
+  const arts = new Set(Object.values(scenes).map((entry) => entry.art));
+  const assets = [...arts].map(prepareBackdrop);
+  for (const button of characterButtons) {
+    const id = button.dataset.character;
+    assets.push(prepareCharacter(id, "walk").then((image) => {
+      const canvas = button.querySelector("canvas");
+      canvas.getContext("2d").drawImage(image, 0, canvas.height, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+      return image;
+    }), prepareCharacter(id, "run"));
+  }
+  progress.max = assets.length;
+  progress.value = 0;
+  status.textContent = "正在加载游戏素材";
+  const results = await Promise.allSettled(assets.map(async (asset) => {
+    const ready = await asset;
+    if (!ready) throw new Error("Asset unavailable");
+    progress.value++;
+    status.textContent = "正在加载游戏素材 " + Math.round(progress.value / progress.max * 100) + "%";
+  }));
+  assetsReady = results.every((result) => result.status === "fulfilled");
+  if (assetsReady) {
+    get("asset-loading").hidden = true;
+    get("enter-game").disabled = !character;
+  } else {
+    status.textContent = "部分素材加载失败";
+    retry.hidden = false;
+  }
+}
+
+get("enter-game").addEventListener("click", async () => {
+  if (!assetsReady || !character || gameStarted) return;
+  get("enter-game").disabled = true;
+  const panels = await prepareBackdrop(scenes[sceneId].art);
+  gameStarted = true;
+  get("home").hidden = true;
+  stage.hidden = false;
+  updateFlashlightStatus(hasBattery ? undefined : "手电缺少电池");
   showScene(sceneId, panels);
-  changingScene = false;
   new ResizeObserver(updateViewSize).observe(viewport);
   requestAnimationFrame(animate);
 });
-for (const pace of ["walk", "run"]) {
-  for (const direction of ["side", "front", "back"]) {
-    const image = new Image();
-    image.src = "assets/" + pace + "-" + direction + ".webp";
-  }
+for (const button of characterButtons) {
+  button.addEventListener("click", () => selectCharacter(button.dataset.character));
 }
+get("retry-assets").addEventListener("click", loadAssets);
+readSave();
+if (savedGame) get("enter-game").textContent = "继续游戏";
+selectCharacter(character);
+loadAssets();
