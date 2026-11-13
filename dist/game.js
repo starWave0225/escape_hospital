@@ -173,7 +173,7 @@ function render() {
 
   const next = sceneInteractions
     .filter((interaction) => Math.abs(interaction.x - player.x) <= (interaction.kind === "item" ? 55 : 82) &&
-      Math.abs(interaction.y - player.y) <= 46)
+      Math.abs(interaction.y - player.y) <= (interaction.side ? 32 : 46))
     .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0];
   if (next !== nearby) showInteractionCue(next);
   updateCursor();
@@ -290,16 +290,13 @@ function toggleFlashlight() {
 function prepareBackdrop(art) {
   if (backdrops.has(art)) return backdrops.get(art);
 
-  const panels = Array.from({ length: art === "corridor" ? 2 : 1 }, () => {
-    const image = new Image();
-    image.className = "panel";
-    image.alt = "";
-    image.draggable = false;
-    image.src = "assets/" + art + ".webp";
-    return image;
-  });
-  const ready = Promise.all(panels.map((image) => image.decode())).then(
-    () => panels,
+  const image = new Image();
+  image.className = "panel";
+  image.alt = "";
+  image.draggable = false;
+  image.src = "assets/" + art + ".webp";
+  const ready = image.decode().then(
+    () => image,
     (error) => {
       backdrops.delete(art);
       console.error("Could not load scene backdrop:", art, error);
@@ -310,16 +307,16 @@ function prepareBackdrop(art) {
   return ready;
 }
 
-function showScene(id, panels, arrival) {
+function showScene(id, image, arrival) {
   sceneId = id;
   scene = scenes[id];
   visited.add(id);
   if (arrival) {
     const entrance = scene.doors.find((door) => door.id === arrival);
     player.x = entrance.x;
-    player.y = entrance.y + 24;
-    player.facing = player.x > scene.width / 2 ? -1 : 1;
-    player.direction = player.facing === 1 ? 0 : Math.PI;
+    player.y = entrance.landingY;
+    player.facing = 1;
+    player.direction = entrance.heading;
   }
   gait = "idle";
   stride = 0;
@@ -328,7 +325,8 @@ function showScene(id, panels, arrival) {
   world.style.width = scene.width + "px";
   backdrop.dataset.floor = scene.floor;
   backdrop.dataset.art = scene.art;
-  backdrop.replaceChildren(...panels);
+  backdrop.classList.toggle("mirrored", Boolean(scene.mirrored));
+  backdrop.replaceChildren(image);
 
   buildInteractionCues();
   HospitalMap.update(sceneId, visited);
@@ -356,6 +354,20 @@ function buildInteractionCues() {
       items.push(item);
     }
   }
+  const thresholds = scene.doors.filter((door) => door.side === "south").map(({ outline }) => {
+    const threshold = document.createElement("span");
+    threshold.className = "door-threshold";
+    threshold.setAttribute("aria-hidden", "true");
+    positionOutline(threshold, outline);
+    return threshold;
+  });
+  if (scene.art.startsWith("stairs-")) {
+    const plate = document.createElement("span");
+    plate.className = "stair-floor-plate";
+    plate.textContent = scene.floor;
+    plate.setAttribute("aria-hidden", "true");
+    itemSprites.push(plate);
+  }
   sceneInteractions = [...scene.doors, ...items];
   for (const { id, outline: [x, y] } of items) {
     if (id === "drawer") continue;
@@ -371,19 +383,21 @@ function buildInteractionCues() {
     button.type = "button";
     button.className = "interaction-cue";
     button.dataset.interaction = interaction.kind || "transition";
-    const [left, top, width, height] = interaction.outline;
-    button.style.left = left + "px";
-    button.style.top = top + "px";
-    button.style.width = width + "px";
-    button.style.height = height + "px";
+    positionOutline(button, interaction.outline);
     button.setAttribute("aria-label", interaction.verb === "开门" ? "开门 · " + interaction.label : interaction.label);
     button.addEventListener("click", (event) => {
       if (event.detail === 0 && nearby === interaction) interact(interaction);
     });
     return [interaction.id, button];
   }));
-  markers.replaceChildren(...itemSprites, ...markerButtons.values());
+  markers.replaceChildren(...thresholds, ...itemSprites, ...markerButtons.values());
   showInteractionCue(undefined);
+}
+
+function positionOutline(element, [left, top, width, height]) {
+  Object.assign(element.style, {
+    left: left + "px", top: top + "px", width: width + "px", height: height + "px",
+  });
 }
 
 async function interact(interaction = nearby) {
@@ -419,8 +433,8 @@ async function interact(interaction = nearby) {
   const { target, arrival } = interaction;
   changingScene = true;
   try {
-    const panels = await prepareBackdrop(scenes[target].art);
-    if (panels) showScene(target, panels, arrival);
+    const image = await prepareBackdrop(scenes[target].art);
+    if (image) showScene(target, image, arrival);
   } finally {
     changingScene = false;
   }
@@ -472,7 +486,7 @@ function aimAtClick(event) {
   if (!interaction && y < scene.floorY) return;
   destination = {
     x: interaction?.x ?? clamp(x, 33, scene.width - 33),
-    y: interaction ? interaction.y + 24 : clamp(y, scene.back, scene.front),
+    y: interaction ? (interaction.landingY ?? interaction.y + 24) : clamp(y, scene.back, scene.front),
     interaction,
     sprint: event.detail >= 2 && (hasAmbientLight() || flashlightOn),
     // Allow a second click before switching through a nearby doorway.
@@ -759,12 +773,12 @@ async function enterGame() {
   if (startingNewGame) resetGame();
   for (const dialog of document.querySelectorAll("#home dialog[open]")) dialog.close();
   playMusic();
-  const panels = await prepareBackdrop(scenes[sceneId].art);
+  const image = await prepareBackdrop(scenes[sceneId].art);
   gameStarted = true;
   get("home").hidden = true;
   stage.hidden = false;
   updateFlashlightStatus(batterySeconds > 0 ? (flashlightOn ? "手电已开启" : "手电已关闭") : "手电没有电");
-  showScene(sceneId, panels);
+  showScene(sceneId, image);
   new ResizeObserver(updateViewSize).observe(viewport);
   requestAnimationFrame(animate);
 }

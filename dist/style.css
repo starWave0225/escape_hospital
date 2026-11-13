@@ -36,7 +36,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .backdrop, .markers { position: absolute; inset: 0; }
 .vignette {
   position: absolute; inset: 0; pointer-events: none; z-index: 9;
-  background: linear-gradient(0deg,#060c0bf0,transparent 24%), radial-gradient(ellipse at center,transparent 55%,#02080577);
+  background: linear-gradient(0deg,#060c0bb8,transparent 20%), radial-gradient(ellipse at center,transparent 57%,#02080562);
 }
 .actor { position: absolute; z-index: 3; pointer-events: none; transform: translate(-50%, -100%); }
 .shadow {
@@ -75,41 +75,30 @@ dialog::backdrop { background: #040907c9; }
 .map-floor h3 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 7px; font-size: 12px; font-weight: 600; }
 .map-floor h3 span { color: var(--muted); font: 11px var(--mono); }
 .map-floor.current h3 span { color: var(--accent); }
-.map-rooms { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding-bottom: 6px; }
+.map-rooms { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.map-rooms.north { padding-bottom: 6px; }
+.map-rooms.south { padding-top: 6px; }
 .map-cell {
   position: relative; display: grid; place-items: center; text-align: center; min-height: 25px;
   border: 1px solid #334138; border-radius: 3px; color: #a5b1a6; font-size: 10px; white-space: nowrap;
 }
 .map-cell.visited { background: #263b2f; color: #dee4da; border-color: #47604f; }
 .map-cell.here { background: #725031; color: #fff4dd; border-color: #e4b379; }
-.map-rooms .map-cell::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 7px; background: #4a574c; }
-.map-rooms .map-cell:last-child { border-style: dashed; }
+.map-rooms .map-cell::after { content: ""; position: absolute; left: 50%; width: 1px; height: 7px; background: #4a574c; }
+.map-rooms.north .map-cell::after { top: 100%; }
+.map-rooms.south .map-cell::after { bottom: 100%; }
 .map-hall { min-height: 21px; }
 
 .backdrop .panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; }
-.backdrop .panel:not(:only-child) { width: 50%; }
-.backdrop .panel + .panel { left: 50%; transform: scaleX(-1); }
+.backdrop.mirrored .panel { transform: scaleX(-1); }
 .backdrop[data-floor="3F"] { filter: brightness(.69) saturate(.48); }
 .backdrop[data-floor="3F"]::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
 }
-.backdrop[data-floor="3F"][data-art="corridor"]::after {
-  background:
-    radial-gradient(ellipse 12% 6% at 23.5% 8%, #071012 49%, transparent),
-    radial-gradient(ellipse 12% 6% at 76.5% 8%, #071012 49%, transparent),
-    radial-gradient(ellipse 4% 8% at 7.1% 28%, #081013d9, transparent),
-    radial-gradient(ellipse 4% 8% at 92.9% 28%, #081013d9, transparent),
-    radial-gradient(ellipse 7% 10% at 42.5% 25%, #081013d9, transparent),
-    radial-gradient(ellipse 7% 10% at 57.5% 25%, #081013d9, transparent),
-    radial-gradient(ellipse 7% 14% at 32% 52%, #081013b0, transparent),
-    radial-gradient(ellipse 7% 14% at 68% 52%, #081013b0, transparent);
+.backdrop[data-floor="3F"][data-art="stairs-top"]::after {
+  background: radial-gradient(ellipse 7% 17% at 18% 43%, #081013d9, transparent);
 }
-.backdrop[data-floor="3F"][data-art="stairs"]::after {
-  background: radial-gradient(ellipse 8% 11% at 51% 14%, #081013e6, transparent),
-    radial-gradient(ellipse 7% 17% at 18% 43%, #081013d9, transparent),
-    radial-gradient(ellipse 19% 35% at 80% 33%, #08101399, transparent);
-}
-.backdrop[data-floor="3F"][data-art="room"]::after {
+.backdrop[data-floor="3F"][data-art^="room"]::after {
   background: radial-gradient(ellipse 19% 10% at 50% 5%, #081013e6, transparent),
     radial-gradient(ellipse 15% 33% at 2% 45%, #08101399, transparent);
 }
@@ -168,6 +157,22 @@ dialog::backdrop { background: #040907c9; }
 .interaction-cue {
   position: absolute; z-index: 2; padding: 0;
   border: 0; border-radius: 2px; background: transparent;
+}
+.door-threshold {
+  position: absolute; z-index: 1; pointer-events: none;
+  clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+  background: linear-gradient(#89948c 0 4px, #424d45 4px 8px, #19241d 8px, #0d1612 90%);
+}
+.door-threshold::after {
+  content: ""; position: absolute; inset: 0;
+  background: #748277;
+  clip-path: polygon(10% 0, 14% 0, 5% 100%, 0 100%, 95% 100%, 86% 0, 90% 0, 100% 100%, 0 100%);
+}
+.stair-floor-plate {
+  position: absolute; z-index: 1; left: 50%; top: 31%; transform: translateX(-50%);
+  min-width: 42px; padding: 4px 6px; text-align: center;
+  color: #b9b3a1; background: #303b35; border: 2px solid #6d7260; border-radius: 2px;
+  box-shadow: 2px 3px 5px #0008; font: 16px var(--mono); pointer-events: none;
 }
 .interaction-cue[data-interaction="transition"] {
   background: linear-gradient(180deg, #0004, #0001 52%, #0005);

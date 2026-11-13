@@ -10,11 +10,18 @@ const HospitalMap = (() => {
   function plan(floorId) {
     const hallId = floorId + "-hall";
     const hall = scenes[hallId];
-    const cells = [{ id: hallId, x: 15, y: 100, width: 482, height: 48 }];
+    const cells = [{ id: hallId, x: 15, y: 68, width: 482, height: 40 }];
     for (const door of hall.doors) {
-      const x = 15 + 482 * door.x / hall.width;
+      const x = 24 + 464 * door.x / hall.width;
       const stairs = door.id === "stairs";
-      cells.push({ id: door.target, x: x - 29, y: 35, width: 58, height: 46, stairs, doorX: x });
+      const north = door.side === "north";
+      const room = scenes[door.target];
+      const entrance = room.doors.find((portal) => portal.id === door.arrival);
+      cells.push({
+        id: door.target, x: x - (9 + 50 * entrance.x / room.width), y: north ? 10 : 124,
+        width: 68, height: 42, stairs, doorX: x, north,
+        stairDirections: room.doors.filter((portal) => portal.verb !== "开门").map((portal) => portal.id === "up" ? "↑" : "↓").join(""),
+      });
     }
     return cells;
   }
@@ -43,23 +50,26 @@ const HospitalMap = (() => {
       context.fillStyle = active ? "#375448" : seen ? "#233930" : "#14231d";
       context.strokeStyle = active ? "#9bc8a8" : seen ? "#638370" : "#415d50";
       context.lineWidth = 2;
+      const hallEdge = cell.north ? cells[0].y : cells[0].y + cells[0].height;
+      const roomEdge = cell.north ? cell.y + cell.height : cell.y;
       if (cell.doorX !== undefined) {
         context.beginPath();
-        context.moveTo(cell.doorX, cell.y + cell.height);
-        context.lineTo(cell.doorX, cells[0].y + 2);
+        context.moveTo(cell.doorX, roomEdge);
+        context.lineTo(cell.doorX, hallEdge);
         context.stroke();
       }
       context.fillRect(cell.x, cell.y, cell.width, cell.height);
       context.strokeRect(cell.x, cell.y, cell.width, cell.height);
       if (cell.doorX !== undefined) {
         context.fillStyle = cell.stairs ? "#e4b879" : "#a0b8a6";
-        context.fillRect(cell.doorX - 5, cells[0].y - 4, 10, 8);
+        context.fillRect(cell.doorX - 5, hallEdge - 3, 10, 6);
+        context.fillRect(cell.doorX - 4, roomEdge - 2, 8, 4);
       }
       if (cell.stairs) {
         context.fillStyle = "#e4b879";
         context.textAlign = "center";
         context.font = "20px sans-serif";
-        context.fillText("↑↓", cell.doorX, cell.y + 29);
+        context.fillText(cell.stairDirections, cell.doorX, cell.y + 26);
       }
     }
 
@@ -69,10 +79,10 @@ const HospitalMap = (() => {
     context.translate(x, y);
     context.rotate(player.direction);
     context.beginPath();
-    context.moveTo(15, 0);
-    context.lineTo(-10, 11);
-    context.lineTo(-6, 0);
-    context.lineTo(-10, -11);
+    context.moveTo(12, 0);
+    context.lineTo(-8, 8);
+    context.lineTo(-5, 0);
+    context.lineTo(-8, -8);
     context.closePath();
     context.lineWidth = 3;
     context.strokeStyle = "#141b13";
@@ -94,13 +104,19 @@ const HospitalMap = (() => {
       const code = document.createElement("span");
       code.textContent = floor.id;
       heading.append(code);
-      const row = document.createElement("div");
-      row.className = "map-rooms";
       const cells = plan(floor.id);
-      cells.slice(1).forEach((cell) => row.append(mapCell(cell.id, cell.stairs ? "↑↓ 楼梯" : scenes[cell.id].name)));
+      const north = document.createElement("div");
+      const south = document.createElement("div");
+      north.className = "map-rooms north";
+      south.className = "map-rooms south";
+      cells.slice(1).forEach((cell, index) => {
+        const entry = mapCell(cell.id, cell.stairs ? cell.stairDirections + " 楼梯" : scenes[cell.id].name);
+        entry.style.gridColumn = index + 1;
+        (cell.north ? north : south).append(entry);
+      });
       const hall = mapCell(cells[0].id, "走廊");
       hall.classList.add("map-hall");
-      section.append(heading, row, hall);
+      section.append(heading, north, hall, south);
       return section;
     });
     floorList.replaceChildren(...sections);
