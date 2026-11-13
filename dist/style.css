@@ -34,7 +34,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 }
 .world { position: absolute; transform-origin: 0 0; width: max-content; height: 600px; }
 .backdrop, .markers { position: absolute; inset: 0; }
-.backdrop { background: no-repeat center / 100% 100%; }
 .vignette {
   position: absolute; inset: 0; pointer-events: none; z-index: 9;
   background: linear-gradient(0deg,#060c0bf0,transparent 24%), radial-gradient(ellipse at center,transparent 55%,#02080577);
@@ -87,8 +86,9 @@ dialog::backdrop { background: #040907c9; }
 .map-rooms .map-cell:last-child { border-style: dashed; }
 .map-hall { min-height: 21px; }
 
-.backdrop .panel { position: absolute; inset-block: 0; width: 900px; background: no-repeat center / 100% 100%; }
-.backdrop .panel + .panel { left: 900px; transform: scaleX(-1); }
+.backdrop .panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; }
+.backdrop .panel:not(:only-child) { width: 50%; }
+.backdrop .panel + .panel { left: 50%; transform: scaleX(-1); }
 .backdrop[data-floor="3F"] { filter: brightness(.84) hue-rotate(13deg) saturate(.75); }
 .backdrop[data-floor="1F"] { filter: brightness(1.06) sepia(.11); }
 .backdrop[data-floor="B1"] { filter: brightness(.68) sepia(.27) saturate(.85); }

@@ -20,6 +20,7 @@ const movement = new Map([
 const keys = new Set();
 const pointers = new Map();
 const sprintKeys = new Set();
+const backdrops = new Map();
 const saveKey = "night-shift-hospital-map-v1";
 const sceneHeight = 600;
 const maxStamina = 100;
@@ -41,6 +42,7 @@ let recoveryTime = 0;
 let exhausted = false;
 let sprintReleased = true;
 let nearby;
+let changingScene = false;
 let frameTime;
 let viewScale = 1;
 let visibleWidth = 900;
@@ -153,7 +155,30 @@ function portalText(portal) {
   return portal.verb === "开门" ? "开门 · " + portal.label : portal.label;
 }
 
-function showScene(id, arrival) {
+function prepareBackdrop(art) {
+  if (backdrops.has(art)) return backdrops.get(art);
+
+  const panels = Array.from({ length: art === "corridor" ? 2 : 1 }, () => {
+    const image = new Image();
+    image.className = "panel";
+    image.alt = "";
+    image.draggable = false;
+    image.src = "assets/" + art + ".webp";
+    return image;
+  });
+  const ready = Promise.all(panels.map((image) => image.decode())).then(
+    () => panels,
+    (error) => {
+      backdrops.delete(art);
+      console.error("Could not load scene backdrop:", art, error);
+      return null;
+    }
+  );
+  backdrops.set(art, ready);
+  return ready;
+}
+
+function showScene(id, panels, arrival) {
   sceneId = id;
   scene = scenes[id];
   visited.add(id);
@@ -170,18 +195,7 @@ function showScene(id, arrival) {
   get("location").textContent = "住院部 / " + scene.name;
   world.style.width = scene.width + "px";
   backdrop.dataset.floor = scene.floor;
-  backdrop.replaceChildren();
-  if (scene.art === "corridor") {
-    for (let i = 0; i < 2; i++) {
-      const panel = document.createElement("div");
-      panel.className = "panel";
-      panel.style.backgroundImage = "url(assets/corridor.webp)";
-      backdrop.append(panel);
-    }
-    backdrop.style.backgroundImage = "";
-  } else {
-    backdrop.style.backgroundImage = "url(assets/" + scene.art + ".webp)";
-  }
+  backdrop.replaceChildren(...panels);
 
   markerButtons = new Map(scene.doors.map((door) => {
     const button = document.createElement("button");
@@ -207,9 +221,16 @@ function showScene(id, arrival) {
   save();
 }
 
-function interact() {
-  if (map.open || !nearby) return;
-  showScene(nearby.target, nearby.arrival);
+async function interact() {
+  if (map.open || changingScene || !nearby) return;
+  const { target, arrival } = nearby;
+  changingScene = true;
+  try {
+    const panels = await prepareBackdrop(scenes[target].art);
+    if (panels) showScene(target, panels, arrival);
+  } finally {
+    changingScene = false;
+  }
 }
 
 function clearMovement() {
@@ -227,7 +248,7 @@ function clearMovement() {
 function animate(time) {
   const elapsed = Math.min((time - (frameTime ?? time)) / 1000, 0.05);
   frameTime = time;
-  if (!map.open) {
+  if (!map.open && !changingScene) {
     const directions = new Set([...keys].map((key) => movement.get(key)));
     for (const direction of pointers.values()) directions.add(direction);
     const dx = Number(directions.has("right")) - Number(directions.has("left"));
@@ -317,6 +338,7 @@ for (const button of document.querySelectorAll("[data-move]")) {
 }
 touchInteract.addEventListener("click", interact);
 function openMap() {
+  if (changingScene) return;
   clearMovement();
   map.showModal();
 }
@@ -324,12 +346,21 @@ get("minimap").addEventListener("click", openMap);
 get("close-map").addEventListener("click", () => map.close());
 
 readSave();
-showScene(sceneId);
+changingScene = true;
+const initialBackdrop = prepareBackdrop(scenes[sceneId].art);
+for (const art of new Set(Object.values(scenes).map((entry) => entry.art))) {
+  prepareBackdrop(art);
+}
+initialBackdrop.then((panels) => {
+  if (!panels) return;
+  showScene(sceneId, panels);
+  changingScene = false;
+  new ResizeObserver(updateViewSize).observe(viewport);
+  requestAnimationFrame(animate);
+});
 for (const pace of ["walk", "run"]) {
   for (const direction of ["side", "front", "back"]) {
     const image = new Image();
     image.src = "assets/" + pace + "-" + direction + ".webp";
   }
 }
-new ResizeObserver(updateViewSize).observe(viewport);
-requestAnimationFrame(animate);
