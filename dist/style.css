@@ -216,28 +216,44 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #07100e; }
   transform: rotate(-8deg);
 }
 .battery::after { content: ""; position: absolute; left: 100%; top: 1px; width: 3px; height: 3px; background: #b3b1a1; }
+.battery-cabinet { position: absolute; z-index: 1; pointer-events: none; filter: drop-shadow(3px 3px 4px #0009); }
+.battery-cabinet img { display: block; width: 100%; height: 100%; }
+.battery-cabinet.open::after {
+  content: ""; position: absolute; left: 8%; top: 18%; width: 84%; height: 23%;
+  background: linear-gradient(#07100c 0 50%, #211f17 74%, #445049 77%, #28322c 100%);
+  border: 2px solid #434c44; box-shadow: inset 0 1px 7px #000, 0 3px 6px #0009;
+}
 .interaction-cue[data-interaction="item"] {
   border-width: 1px;
   box-shadow: inset 0 0 6px #ffdc8a5c, 0 0 5px #ffdb8b, 0 0 14px #ffc867a3;
 }
-#touch-flashlight[aria-pressed="true"] { color: #ffdaa0; border-color: #a47e48; }
+.flashlight-control {
+  position: absolute; z-index: 12; display: grid; justify-items: center; gap: 4px;
+  right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.flashlight-toggle {
+  display: grid; place-items: center; pointer-events: auto;
+  width: 44px; height: 44px; padding: 0;
+  color: #c4d4c5; background: #0a1612df; border: 1px solid #87ae917a; border-radius: 5px;
+}
+.flashlight-toggle[data-powered="false"] { color: #829488; }
+.flashlight-toggle:hover { border-color: #acd3ab; }
+.flashlight-rays { opacity: .25; }
+.flashlight-toggle[aria-pressed="true"] {
+  color: #ffdaa0; border-color: #b89960; box-shadow: 0 0 12px #edbe703d;
+}
+.flashlight-toggle[aria-pressed="true"] .flashlight-rays { opacity: 1; }
+.battery-level {
+  color: #f0ddba; background: #0a1612e8; border-radius: 3px;
+  padding: 3px 5px; min-width: 42px; text-align: center; font: 11px var(--mono);
+}
+.battery-level.low { color: #f3a175; }
+@media (pointer: coarse) {
+  .flashlight-control { bottom: calc(63px + env(safe-area-inset-bottom)); }
+}
 
 
-.home {
-  position: absolute; inset: 0; overflow: auto;
-  display: grid; align-items: center;
-  background:
-    linear-gradient(90deg, #071411 0%, #0b1715f5 23%, #0c1a17b0 43%, #0c1a1735 100%),
-    linear-gradient(0deg, #070e0dc9, transparent 58%), url("assets/corridor.webp") center / cover;
-}
-.home-content { width: min(100%, 530px); padding: clamp(28px, 7vw, 94px); }
-.home-title h1 {
-  font-family: "Songti SC", SimSun, "Noto Serif CJK SC", serif;
-  font-weight: 800; color: #f1e6c9; margin: 0 0 44px;
-  font-size: clamp(43px, 7.2vw, 88px); line-height: 1; letter-spacing: .08em;
-  white-space: nowrap; text-shadow: 0 8px 45px #000a;
-}
-.home h2 { margin: 0 0 12px; font-weight: 500; font-size: 13px; color: #d1dfd3; letter-spacing: .16em; }
 .character-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .character-option {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -248,7 +264,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #07100e; }
 .character-option:hover { border-color: #bccfbc; }
 .character-option[aria-pressed="true"] { border-color: #dcb681; color: #ffdaa0; background: radial-gradient(ellipse at 50% 40%, #4a4b35e8, #202a20ed 78%); }
 .character-option canvas { display: block; width: 100%; height: clamp(118px, 22vh, 224px); object-fit: contain; filter: drop-shadow(0 5px 8px #0007); }
-.home-entry { display: grid; gap: 10px; margin-top: 18px; }
 .enter-game {
   padding: 12px; border: 1px solid #debc87; border-radius: 3px;
   font-size: 15px; font-weight: 600; letter-spacing: .17em; color: #161912; background: #dabc8d;
@@ -257,11 +272,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #07100e; }
 .enter-game:not(:disabled):hover { background: #efd2a2; }
 .asset-loading progress { display: block; width: 100%; height: 5px; accent-color: #dabc8d; }
 .asset-loading p { margin: 7px 0 0; color: #b8c8ba; font-size: 11px; }
-@media (max-width: 540px) {
-  .home { background-position: 64% center; }
-  .home-content { padding: 26px; width: min(100%, 400px); }
-  .home-title h1 { margin-bottom: 28px; }
-}
+
 
 :root {
   --cursor-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M3 3l20 11-9 2.5-3.5 8z' fill='%230d1714' stroke='%23040b08' stroke-width='3.2' stroke-linejoin='round'/%3E%3Cpath d='M3 3l20 11-9 2.5-3.5 8z' fill='%23b58b52' stroke='%23f4d5a0' stroke-width='1.25' stroke-linejoin='round'/%3E%3Cpath d='M5 5l8.5 10.8-2.7 6.5z' fill='%237e5936'/%3E%3C/svg%3E") 3 3;
@@ -274,3 +285,86 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #07100e; }
 .viewport[data-cursor="move"] { cursor: var(--cursor-move), crosshair; }
 .viewport[data-cursor="transition"], .stage .interaction-cue[data-interaction="transition"] { cursor: var(--cursor-door), pointer; }
 .viewport[data-cursor="item"], .stage .interaction-cue[data-interaction="item"] { cursor: var(--cursor-item), pointer; }
+
+
+.home { position: absolute; inset: 0; overflow: auto; background: #080e0d; }
+.home-stage {
+  position: relative; isolation: isolate; display: grid; grid-template-rows: 1fr auto;
+  gap: 16px; min-height: 100%; padding: max(26px, env(safe-area-inset-top)) max(5vw, 22px)
+    max(24px, env(safe-area-inset-bottom));
+}
+.home-stage::before {
+  content: ""; position: absolute; z-index: -2; inset: 0;
+  background:
+    linear-gradient(90deg, #090e0de8, #0b1513c4 26%, #0c1a1738 52%, transparent 73%),
+    linear-gradient(0deg, #080f0ef5, transparent 24%, transparent 91%, #0a110f63),
+    url("assets/hospital-title.webp") 65% center / cover no-repeat;
+}
+.home-frame { position: absolute; z-index: -1; inset: 12px; border: 1px solid #c5a26859; pointer-events: none; }
+.home-frame::before, .home-frame::after {
+  content: ""; position: absolute; inset: -1px;
+  background: linear-gradient(#bc9a64 0 0) left top / 26px 1px,
+    linear-gradient(#bc9a64 0 0) left top / 1px 26px,
+    linear-gradient(#bc9a64 0 0) right bottom / 26px 1px,
+    linear-gradient(#bc9a64 0 0) right bottom / 1px 26px;
+  background-repeat: no-repeat;
+}
+.home-frame::after { transform: scaleX(-1); }
+.home-content { align-self: center; width: min(100%, 440px); margin-left: clamp(0px, 3vw, 58px); }
+.home-title h1 {
+  margin: 0 0 clamp(18px, 5vh, 42px); color: #f4e6c6;
+  font: 800 clamp(44px, min(8.9vw, 15vh), 114px)/1.07 KaiTi, STKaiti, "Songti SC", SimSun, serif;
+  letter-spacing: .08em; white-space: nowrap; text-shadow: 2px 3px #634b33, 0 8px 24px #000d;
+}
+.title-menu { display: grid; gap: 7px; width: min(100%, 322px); }
+.title-menu-entry {
+  display: flex; align-items: center; gap: 13px; min-height: 48px;
+  border: 1px solid #b9956055; padding: 7px 15px; background: linear-gradient(90deg, #19221de8, #131e1ba6);
+  color: #f1e1bc; text-align: left; font-size: clamp(16px, 1.65vw, 21px); letter-spacing: .14em;
+}
+.title-menu-entry::before {
+  content: ""; width: 6px; height: 6px; flex: none; transform: rotate(45deg); border: 1px solid #b99a68;
+}
+.title-menu-entry:disabled { opacity: .43; cursor: default; }
+.title-menu-entry:not(:disabled):hover, .title-menu-entry:focus-visible,
+.title-menu:not(:hover, :has(:focus-visible)) .title-menu-entry.preferred:not(:disabled) {
+  border-color: #d7ac72; color: #fff0d2;
+  background: linear-gradient(90deg, #705239ed, #3d3223ef 70%, #1d221be6);
+  box-shadow: inset 0 0 0 2px #1d1b1480, 0 2px 8px #0b100ca8;
+}
+.title-menu-entry:not(:disabled):hover::before, .title-menu-entry:focus-visible::before,
+.title-menu:not(:hover, :has(:focus-visible)) .title-menu-entry.preferred:not(:disabled)::before { background: #efd19a; }
+.home-content .asset-loading { width: min(100%, 322px); margin-top: 15px; }
+.home-content #retry-assets { margin-top: 8px; }
+.title-footer {
+  border-top: 1px solid #c5a26859; padding-top: 10px;
+  color: #d2c4a9; font-size: 12px; letter-spacing: .1em; text-align: center;
+}
+.title-footer span { margin-inline: 5px; color: #c8a376; }
+.title-dialog { width: min(450px, calc(100% - 28px)); border-color: #b9956066; background: #111c17; }
+.title-dialog h2 { margin: 0; color: #f1e1bc; font-size: 17px; font-weight: 500; letter-spacing: .12em; }
+.title-dialog .dialog-close { padding: 4px 9px; font-size: 19px; line-height: 1; }
+.title-dialog-body { padding: 16px; }
+.title-dialog .enter-game { width: 100%; margin-top: 14px; }
+.title-dialog-body p { margin: 12px 0 0; color: #c7b9a0; font-size: 13px; }
+.title-dialog-body #no-save { margin: 0; }
+.save-slot { width: 100%; font-size: 14px; letter-spacing: .03em; }
+.save-slot span { margin-left: auto; color: #bfae8f; font-size: 12px; }
+.volume-control { display: flex; align-items: center; gap: 12px; color: #ebdfc4; font-size: 13px; }
+.volume-control input { min-width: 50px; flex: 1; accent-color: #d2ac79; }
+.volume-control output { min-width: 34px; text-align: right; }
+@media (orientation: portrait) {
+  .home-stage::before {
+    background: linear-gradient(0deg, #080f0efa 9%, #0a1412b5 45%, #0b15131b 81%), url("assets/hospital-title.webp") 73% center / cover no-repeat;
+  }
+  .home-content { align-self: end; width: min(100%, 350px); margin: max(80px, 25dvh) auto 0; }
+  .home-title h1 { font-size: clamp(47px, 13vw, 82px); }
+  .title-menu { width: 100%; }
+  .title-footer { display: none; }
+}
+@media (max-height: 530px) and (orientation: landscape) {
+  .home-stage { gap: 10px; }
+  .home-title h1 { margin-bottom: 14px; }
+  .title-menu { gap: 4px; }
+  .title-menu-entry { min-height: 35px; }
+}

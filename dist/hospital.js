@@ -51,6 +51,14 @@ const Hospital = (() => {
         items: ward ? [{
           id: "battery", kind: "item", label: "拾取电池",
           x: 349, y: 490, outline: [336, 346, 28, 17],
+        }] : id === "1F" && slot === 0 ? [{
+          id: "drawer", kind: "item", label: "打开柜子抽屉",
+          x: 547, y: 505, outline: [503, 365, 88, 27],
+          sprite: [495, 338, 104, 153],
+          contents: {
+            id: "spare-battery", kind: "item", label: "拾取备用电池",
+            x: 547, y: 505, outline: [529, 370, 28, 17],
+          },
         }] : [],
       };
     });

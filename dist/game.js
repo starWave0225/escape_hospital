@@ -14,8 +14,14 @@ const characterButtons = [...document.querySelectorAll("[data-character]")];
 const characterArt = new Map();
 const map = get("map");
 const touchInteract = get("touch-interact");
-const touchFlashlight = get("touch-flashlight");
+const flashlightToggle = get("flashlight-toggle");
 const flashlightStatus = get("flashlight-status");
+const batteryLevel = get("battery-level");
+const music = new Audio();
+music.loop = true;
+music.volume = .47;
+music.addEventListener("playing", () => { get("music-status").textContent = "背景音乐播放中"; });
+music.addEventListener("pause", () => { get("music-status").textContent = "背景音乐已暂停"; });
 const staminaMeter = get("stamina");
 const staminaDisplay = get("stamina-display");
 const movement = new Map([
@@ -33,6 +39,7 @@ const sprintDrain = 26;
 const staminaRecovery = 22;
 const sprintThreshold = 25;
 const recoveryDelay = 0.6;
+const batteryLifetime = 180;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 let visited = new Set();
 let sceneId = start;
@@ -48,7 +55,12 @@ let exhausted = false;
 let sprintReleased = true;
 let nearby;
 let sceneInteractions = [];
-let hasBattery = false;
+let starterBatteryTaken = false;
+let spareBatteryTaken = false;
+let spareBattery = false;
+let drawerOpen = false;
+let batterySeconds = 0;
+let cabinetArt;
 let flashlightOn = false;
 let changingScene = false;
 let destination;
@@ -62,6 +74,11 @@ let character;
 let assetsReady = false;
 let gameStarted = false;
 let savedGame = false;
+let startingNewGame = false;
+
+function hasAmbientLight() {
+  return scene.floor !== "3F";
+}
 
 function readSave() {
   try {
@@ -83,8 +100,13 @@ function readSave() {
     player.direction = Number.isFinite(saved.direction) ? saved.direction : player.facing === 1 ? 0 : Math.PI;
     if (Number.isFinite(saved.stamina)) stamina = clamp(saved.stamina, 0, maxStamina);
     exhausted = Boolean(saved.exhausted) && stamina < sprintThreshold;
-    hasBattery = saved.hasBattery === true;
-    flashlightOn = hasBattery && saved.flashlightOn === true;
+    starterBatteryTaken = saved.starterBatteryTaken === true || saved.hasBattery === true;
+    spareBatteryTaken = saved.spareBatteryTaken === true;
+    spareBattery = saved.spareBattery === true;
+    drawerOpen = saved.drawerOpen === true || spareBatteryTaken;
+    batterySeconds = Number.isFinite(saved.batterySeconds) ? clamp(saved.batterySeconds, 0, batteryLifetime)
+      : starterBatteryTaken ? batteryLifetime : 0;
+    flashlightOn = batterySeconds > 0 && saved.flashlightOn === true;
   } catch {
     // Storage may be unavailable in private browsing or a local file.
   }
@@ -103,7 +125,11 @@ function save() {
       direction: player.direction,
       stamina,
       exhausted,
-      hasBattery,
+      starterBatteryTaken,
+      spareBatteryTaken,
+      spareBattery,
+      drawerOpen,
+      batterySeconds,
       flashlightOn,
       character,
     }));
@@ -134,7 +160,7 @@ function render() {
   HospitalMap.draw(sceneId, visited, { x: player.x, depth, direction: player.direction });
   const aim = player.direction;
   Lighting.draw({
-    dark: scene.floor === "3F",
+    dark: !hasAmbientLight(),
     enabled: flashlightOn,
     x: (player.x - camera + Math.cos(aim) * height * .15) * viewScale,
     y: top + (player.y - height * (sprinting ? .66 : .60) + Math.sin(aim) * height * .09) * viewScale,
@@ -208,19 +234,45 @@ function showInteractionCue(next) {
 }
 
 function updateFlashlightStatus(message) {
-  touchFlashlight.hidden = !hasBattery;
-  touchFlashlight.setAttribute("aria-pressed", String(flashlightOn));
-  flashlightStatus.textContent = message || (flashlightOn ? "手电已开启" : "手电已关闭");
+  const percent = Math.ceil(batterySeconds / batteryLifetime * 100);
+  const text = percent + "%" + (spareBattery ? " +1" : "");
+  if (batteryLevel.textContent !== text) batteryLevel.textContent = text;
+  batteryLevel.classList.toggle("low", percent <= 15);
+  flashlightToggle.dataset.powered = String(batterySeconds > 0);
+  flashlightToggle.setAttribute("aria-pressed", String(flashlightOn));
+  if (message) flashlightStatus.textContent = message;
+}
+
+function drainBattery(elapsed) {
+  if (!flashlightOn || !elapsed) return;
+  const oldPercent = Math.ceil(batterySeconds / batteryLifetime * 100);
+  batterySeconds = Math.max(0, batterySeconds - elapsed);
+  if (batterySeconds === 0) {
+    if (spareBattery) {
+      spareBattery = false;
+      batterySeconds = batteryLifetime;
+      updateFlashlightStatus("已换上备用电池。");
+    } else {
+      flashlightOn = false;
+      updateFlashlightStatus("电池已耗尽。");
+      render();
+    }
+    save();
+  } else if (oldPercent !== Math.ceil(batterySeconds / batteryLifetime * 100)) {
+    updateFlashlightStatus();
+    save();
+  }
 }
 
 function toggleFlashlight() {
   if (changingScene || map.open) return;
-  if (!hasBattery) {
-    updateFlashlightStatus("手电缺少电池。201 病房的床头柜上有电池。");
+  if (!batterySeconds) {
+    updateFlashlightStatus(starterBatteryTaken ? "手电没有电。备用电池在一楼 101 室的柜子抽屉里。"
+      : "手电缺少电池。201 病房的床头柜上有电池。");
     return;
   }
   flashlightOn = !flashlightOn;
-  updateFlashlightStatus();
+  updateFlashlightStatus(flashlightOn ? "手电已开启" : "手电已关闭");
   render();
   save();
 }
@@ -276,16 +328,34 @@ function showScene(id, panels, arrival) {
 }
 
 function buildInteractionCues() {
-  const items = (scene.items || []).filter((item) => item.id !== "battery" || !hasBattery);
+  const items = [];
+  const itemSprites = [];
+  for (const item of scene.items || []) {
+    if (item.id === "drawer") {
+      const [x, y, width, height] = item.sprite;
+      const cabinet = document.createElement("span");
+      cabinet.className = "battery-cabinet";
+      cabinet.classList.toggle("open", drawerOpen);
+      Object.assign(cabinet.style, { left: x + "px", top: y + "px", width: width + "px", height: height + "px" });
+      cabinet.setAttribute("aria-hidden", "true");
+      cabinet.append(cabinetArt);
+      itemSprites.push(cabinet);
+      if (!drawerOpen) items.push(item);
+      else if (!spareBatteryTaken) items.push(item.contents);
+    } else if (!starterBatteryTaken) {
+      items.push(item);
+    }
+  }
   sceneInteractions = [...scene.doors, ...items];
-  const itemSprites = items.map(({ outline: [x, y] }) => {
+  for (const { id, outline: [x, y] } of items) {
+    if (id === "drawer") continue;
     const sprite = document.createElement("span");
     sprite.className = "battery";
     sprite.setAttribute("aria-hidden", "true");
     sprite.style.left = (x + 2) + "px";
     sprite.style.top = (y + 1) + "px";
-    return sprite;
-  });
+    itemSprites.push(sprite);
+  }
   markerButtons = new Map(sceneInteractions.map((interaction) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -309,11 +379,25 @@ function buildInteractionCues() {
 async function interact(interaction = nearby) {
   if (map.open || changingScene || !interaction) return;
   destination = undefined;
-  if (interaction.id === "battery" && !hasBattery) {
-    hasBattery = true;
-    flashlightOn = true;
+  if (interaction.kind === "item") {
+    let message;
+    if (interaction.id === "drawer") {
+      drawerOpen = true;
+      message = "抽屉已打开。";
+    } else {
+      if (interaction.id === "battery") starterBatteryTaken = true;
+      else spareBatteryTaken = true;
+      if (batterySeconds > 0) {
+        spareBattery = true;
+        message = "已拾取备用电池。";
+      } else {
+        batterySeconds = batteryLifetime;
+        flashlightOn = true;
+        message = "已装上电池，手电已开启。按 T 可开关。";
+      }
+    }
     buildInteractionCues();
-    updateFlashlightStatus("已装上电池，手电已开启。按 L 可开关。");
+    updateFlashlightStatus(message);
     render();
     save();
     return;
@@ -356,7 +440,7 @@ function updateCursor() {
   if (!mousePosition) return;
   const point = worldPoint(mousePosition.x, mousePosition.y);
   const interaction = interactionAt(point);
-  const discoverable = scene.floor !== "3F" || interaction === nearby;
+  const discoverable = hasAmbientLight() || interaction === nearby;
   const cursor = interaction && discoverable
     ? interaction.kind || "transition"
     : point.y >= scene.floorY ? "move" : "default";
@@ -364,7 +448,7 @@ function updateCursor() {
 }
 
 function aimAtClick(event) {
-  if (event.detail === 0 || map.open || changingScene || event.target.closest(".minimap")) return;
+  if (event.detail === 0 || map.open || changingScene || event.target.closest(".minimap, .flashlight-control")) return;
   if (event.detail === 1) lastClickScene = sceneId;
   if (lastClickScene !== sceneId) return;
 
@@ -376,7 +460,7 @@ function aimAtClick(event) {
     x: interaction?.x ?? clamp(x, 33, scene.width - 33),
     y: interaction ? interaction.y + 24 : clamp(y, scene.back, scene.front),
     interaction,
-    sprint: event.detail >= 2,
+    sprint: event.detail >= 2 && (hasAmbientLight() || flashlightOn),
     // Allow a second click before switching through a nearby doorway.
     enterAfter: performance.now() + (event.detail === 1 ? 320 : 0),
   };
@@ -386,13 +470,14 @@ function animate(time) {
   const elapsed = Math.min((time - (frameTime ?? time)) / 1000, 0.05);
   frameTime = time;
   if (!map.open && !changingScene) {
+    drainBattery(elapsed);
     const directions = new Set([...keys].map((key) => movement.get(key)));
     for (const direction of pointers.values()) directions.add(direction);
     let dx = Number(directions.has("right")) - Number(directions.has("left"));
     let dy = Number(directions.has("down")) - Number(directions.has("up"));
     const diagonal = dx && dy ? Math.SQRT1_2 : 1;
     const holdingSprint = sprintKeys.size > 0 || directions.has("sprint") || Boolean(destination?.sprint);
-    const canSprint = holdingSprint && !exhausted && stamina > 0;
+    const canSprint = holdingSprint && (hasAmbientLight() || flashlightOn) && !exhausted && stamina > 0;
     const speedX = canSprint ? 378 : 224;
     const speedY = canSprint ? 204 : 132;
     let x = clamp(player.x + dx * speedX * elapsed * diagonal, 33, scene.width - 33);
@@ -437,7 +522,11 @@ function animate(time) {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (!gameStarted || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (!gameStarted) {
+    navigateTitleMenu(event);
+    return;
+  }
   const key = event.key.toLowerCase();
   if (key === "m" && !event.repeat) {
     event.preventDefault();
@@ -465,7 +554,11 @@ window.addEventListener("keydown", (event) => {
   }
   if (event.repeat) return;
   if (key === "e") interact();
-  if (key === "l") toggleFlashlight();
+  if (key === "t") toggleFlashlight();
+  if (key === "b") {
+    if (music.paused) playMusic();
+    else music.pause();
+  }
 });
 
 window.addEventListener("keyup", (event) => {
@@ -503,7 +596,10 @@ viewport.addEventListener("pointerleave", () => {
   delete viewport.dataset.cursor;
 });
 touchInteract.addEventListener("click", () => interact());
-touchFlashlight.addEventListener("click", toggleFlashlight);
+flashlightToggle.addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleFlashlight();
+});
 function openMap() {
   if (changingScene) return;
   clearMovement();
@@ -520,6 +616,51 @@ function selectCharacter(id) {
   get("enter-game").disabled = !assetsReady || !character;
 }
 
+function navigateTitleMenu(event) {
+  const menu = get("title-menu");
+  const focused = document.activeElement;
+  if (document.querySelector("#home dialog[open]") ||
+      (focused !== document.body && !menu.contains(focused))) return;
+  const entries = [...menu.querySelectorAll("button:not(:disabled)")];
+  const preferred = entries.find((entry) => entry.classList.contains("preferred")) ?? entries[0];
+  if (!preferred) return;
+  if (event.key === "Enter" && focused === document.body && !event.repeat) {
+    event.preventDefault();
+    preferred.click();
+  }
+  if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+    event.preventDefault();
+    const direction = event.key === "ArrowDown" ? 1 : -1;
+    const index = entries.indexOf(focused);
+    const next = index < 0 ? preferred : entries[(index + direction + entries.length) % entries.length];
+    next.focus();
+  }
+}
+
+function updateTitleMenu() {
+  get("new-game").disabled = !assetsReady;
+  get("continue-game").disabled = !assetsReady || !savedGame;
+  get("load-game").disabled = !assetsReady;
+  get("new-game").classList.toggle("preferred", !savedGame);
+  get("continue-game").classList.toggle("preferred", savedGame);
+  get("load-slot").hidden = !savedGame;
+  get("no-save").hidden = savedGame;
+  if (savedGame) get("save-location").textContent = scene.floor + " / " + scene.name;
+}
+
+function resetGame() {
+  sceneId = start;
+  scene = scenes[start];
+  visited = new Set();
+  player = { x: 385, y: 516, facing: 1, direction: 0 };
+  stamina = maxStamina;
+  recoveryTime = 0;
+  exhausted = false;
+  sprintReleased = true;
+  starterBatteryTaken = spareBatteryTaken = spareBattery = drawerOpen = flashlightOn = false;
+  batterySeconds = 0;
+}
+
 async function prepareCharacter(id, pace) {
   const key = id + "-" + pace;
   if (characterArt.has(key)) return characterArt.get(key);
@@ -530,6 +671,39 @@ async function prepareCharacter(id, pace) {
   return image;
 }
 
+async function prepareCabinet() {
+  if (cabinetArt) return cabinetArt;
+  const image = new Image();
+  image.alt = "";
+  image.draggable = false;
+  image.src = "assets/battery-cabinet.webp";
+  await image.decode();
+  cabinetArt = image;
+  return image;
+}
+
+async function prepareTitleArtwork() {
+  const image = new Image();
+  image.src = "assets/hospital-title.webp";
+  await image.decode();
+  return image;
+}
+
+async function prepareMusic() {
+  if (music.src) return music;
+  const response = await fetch("assets/night-ward.wav");
+  if (!response.ok) throw new Error("Music unavailable");
+  music.src = URL.createObjectURL(await response.blob());
+  return music;
+}
+
+function playMusic() {
+  music.play().catch((error) => {
+    get("music-status").textContent = "背景音乐播放失败，按 B 重试。";
+    console.warn("Background music could not start:", error);
+  });
+}
+
 async function loadAssets() {
   const progress = get("asset-progress");
   const status = get("asset-status");
@@ -537,6 +711,7 @@ async function loadAssets() {
   retry.hidden = true;
   const arts = new Set(Object.values(scenes).map((entry) => entry.art));
   const assets = [...arts].map(prepareBackdrop);
+  assets.push(prepareCabinet(), prepareMusic(), prepareTitleArtwork());
   for (const button of characterButtons) {
     const id = button.dataset.character;
     assets.push(prepareCharacter(id, "walk").then((image) => {
@@ -557,30 +732,76 @@ async function loadAssets() {
   assetsReady = results.every((result) => result.status === "fulfilled");
   if (assetsReady) {
     get("asset-loading").hidden = true;
-    get("enter-game").disabled = !character;
+    updateTitleMenu();
   } else {
     status.textContent = "部分素材加载失败";
     retry.hidden = false;
   }
 }
 
-get("enter-game").addEventListener("click", async () => {
+async function enterGame() {
   if (!assetsReady || !character || gameStarted) return;
   get("enter-game").disabled = true;
+  if (startingNewGame) resetGame();
+  for (const dialog of document.querySelectorAll("#home dialog[open]")) dialog.close();
+  playMusic();
   const panels = await prepareBackdrop(scenes[sceneId].art);
   gameStarted = true;
   get("home").hidden = true;
   stage.hidden = false;
-  updateFlashlightStatus(hasBattery ? undefined : "手电缺少电池");
+  updateFlashlightStatus(batterySeconds > 0 ? (flashlightOn ? "手电已开启" : "手电已关闭") : "手电没有电");
   showScene(sceneId, panels);
   new ResizeObserver(updateViewSize).observe(viewport);
   requestAnimationFrame(animate);
+}
+
+function chooseCharacter(newGame) {
+  startingNewGame = newGame;
+  selectCharacter(character);
+  get("new-game-warning").hidden = !newGame || !savedGame;
+  get("enter-game").textContent = newGame ? "进入医院" : "继续游戏";
+  get("character-select").showModal();
+}
+
+function continueGame() {
+  if (!savedGame) return;
+  startingNewGame = false;
+  get("load-dialog").close();
+  if (character) enterGame();
+  else chooseCharacter(false);
+}
+
+get("enter-game").addEventListener("click", enterGame);
+get("new-game").addEventListener("click", () => chooseCharacter(true));
+get("continue-game").addEventListener("click", continueGame);
+get("load-game").addEventListener("click", () => get("load-dialog").showModal());
+get("load-slot").addEventListener("click", continueGame);
+get("open-settings").addEventListener("click", () => get("settings-dialog").showModal());
+for (const button of document.querySelectorAll(".title-dialog .dialog-close")) {
+  button.addEventListener("click", () => button.closest("dialog").close());
+}
+
+const volumeInput = get("music-volume");
+function updateMusicVolume(value) {
+  volumeInput.value = value;
+  get("volume-value").value = value + "%";
+  music.volume = value / 100;
+}
+try {
+  const stored = localStorage.getItem("night-shift-music-volume");
+  if (stored !== null && Number.isFinite(Number(stored))) updateMusicVolume(clamp(Number(stored), 0, 100));
+} catch {}
+volumeInput.addEventListener("input", () => {
+  const value = Number(volumeInput.value);
+  updateMusicVolume(value);
+  try { localStorage.setItem("night-shift-music-volume", String(value)); } catch {}
 });
+
 for (const button of characterButtons) {
   button.addEventListener("click", () => selectCharacter(button.dataset.character));
 }
 get("retry-assets").addEventListener("click", loadAssets);
 readSave();
-if (savedGame) get("enter-game").textContent = "继续游戏";
 selectCharacter(character);
+updateTitleMenu();
 loadAssets();
