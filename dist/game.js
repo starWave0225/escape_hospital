@@ -23,6 +23,11 @@ const ghosts = [
 const ghostArt = new Map();
 const characterButtons = [...document.querySelectorAll("[data-character]")];
 const characterArt = new Map();
+// Hip positions in the four running frames, in 272 px sprite coordinates.
+const runHips = {
+  man: { side: [110, 118, 104, 116], front: [129, 142, 130, 144], back: [141, 128, 138, 132] },
+  woman: { side: [120, 117, 119, 116], front: [136, 143, 133, 137], back: [132, 130, 136, 143] },
+};
 const map = get("map");
 const backpack = get("backpack");
 const deathDialog = get("death-dialog");
@@ -217,7 +222,7 @@ function render() {
     dark: !hasAmbientLight(),
     enabled: flashlightOn || emptyFlashTimer !== undefined,
     x: player.x + Math.cos(aim) * height * .15,
-    y: player.y - height * .60 + Math.sin(aim) * height * .09,
+    y: player.y - height * (sprinting ? .52 : .60) + Math.sin(aim) * height * .09,
     direction: aim,
   });
 
@@ -236,20 +241,26 @@ function drawCharacter(context, id, pose, running = false, distance = 0, facing 
     ? Math.abs(Math.sin(direction)) > .92 ? (direction < 0 ? "back" : "front") : "side"
     : pose;
   const row = { side: 0, front: 1, back: 2 }[view];
-  const frame = Math.floor(distance / (view === "side" ? 29 : 20)) % walkCycle.length;
-  const image = characterArt.get(id);
+  const side = view === "side";
+  const stepLength = running ? (side ? 36 : 22) : (side ? 29 : 20);
+  const frame = Math.floor(distance / stepLength) % walkCycle.length;
+  const image = characterArt.get(running ? id + "-run" : id);
   context.clearRect(0, 0, width, height);
   context.save();
-  if (view === "side" && facing < 0) {
+  if (side && facing < 0) {
     context.translate(width, 0);
     context.scale(-1, 1);
   }
   if (pose === "idle") {
     context.drawImage(image, 0, row * height, width, height, 0, 0, width, height);
+  } else if (running) {
+    const scale = id === "man" ? .82 : .78;
+    const hipX = runHips[id][view][frame];
+    const lift = side && frame % 2 === 1 ? 5 : 0;
+    context.drawImage(image, frame * width, row * height, width, height,
+      width / 2 - hipX * scale, height * (1 - scale) - lift, width * scale, height * scale);
   } else {
     const hip = Math.round(height * .53);
-    // Lean from the hips without scaling the torso or moving the feet.
-    if (running && view === "side") context.transform(1, 0, -.12, 1, hip * .12, 0);
     context.drawImage(image, width, row * height, width, hip, 0, 0, width, hip);
     context.drawImage(image, walkCycle[frame] * width, row * height + hip, width, height - hip,
       0, hip, width, height - hip);
@@ -857,10 +868,10 @@ function updateMovement(elapsed, time) {
   const nextGait = moving ? (x !== player.x ? "side" : dy < 0 ? "back" : "front") : "idle";
   const nextSprinting = moving && canSprint;
   const facingChanged = gait !== nextGait || (dx && dx !== player.facing);
-  if (gait !== nextGait) stride = 0;
+  if (gait !== nextGait || sprinting !== nextSprinting) stride = 0;
   gait = nextGait;
   sprinting = nextSprinting;
-  if (moving) stride += Math.hypot(x - player.x, y - player.y) * (sprinting ? 1.16 : 1);
+  if (moving) stride += Math.hypot(x - player.x, y - player.y);
   if (dx) player.facing = dx;
   if (dx || dy) player.direction = Math.atan2(dy, dx);
   player.x = x;
@@ -1093,12 +1104,13 @@ function resetGame() {
   batterySeconds = 0;
 }
 
-async function prepareCharacter(id) {
-  if (characterArt.has(id)) return characterArt.get(id);
+async function prepareCharacter(id, running = false) {
+  const key = running ? id + "-run" : id;
+  if (characterArt.has(key)) return characterArt.get(key);
   const image = new Image();
-  image.src = "assets/" + id + "-walk.webp";
+  image.src = "assets/" + id + (running ? "-run-clean.webp" : "-walk.webp");
   await image.decode();
-  characterArt.set(id, image);
+  characterArt.set(key, image);
   return image;
 }
 
@@ -1169,7 +1181,7 @@ async function loadAssets() {
       const canvas = button.querySelector("canvas");
       canvas.getContext("2d").drawImage(image, 0, canvas.height, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
       return image;
-    }));
+    }), prepareCharacter(id, true));
   }
   progress.max = assets.length;
   progress.value = 0;

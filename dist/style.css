@@ -32,7 +32,12 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   background: #111b17; border-block: 1px solid #364337;
   user-select: none; touch-action: manipulation;
 }
-.world { position: absolute; transform-origin: 0 0; width: max-content; height: 600px; }
+.world {
+  position: absolute; transform-origin: 0 0; width: max-content; height: 600px;
+  filter: brightness(1) saturate(1);
+  transition: filter .7s ease;
+}
+.stage[data-sanity="visions"] .world { filter: brightness(.72) saturate(.58); }
 .backdrop, .markers { position: absolute; inset: 0; }
 .vignette {
   position: absolute; inset: 0; pointer-events: none; z-index: 9;
@@ -114,7 +119,10 @@ dialog::backdrop { background: #040907c9; }
 }
 .stage[data-sanity="decay"] .sanity-haze { opacity: .26; }
 .stage[data-sanity="unstable"] .sanity-haze { opacity: .52; }
-.stage[data-sanity="visions"] .sanity-haze { opacity: .82; }
+.stage[data-sanity="visions"] .sanity-haze {
+  opacity: 1;
+  background: radial-gradient(ellipse at 51% 48%, #0a10151c 18%, #0c101632 55%, #0a070fbc 100%);
+}
 .quake { position: absolute; inset: 0; pointer-events: none; }
 .world.stumbling { animation: sanity-shudder .42s ease-out both; }
 @keyframes sanity-shudder {
@@ -134,7 +142,7 @@ dialog::backdrop { background: #040907c9; }
 }
 .sanity-figure[data-figure="ghost"] {
   z-index: 4;
-  filter: saturate(.55) drop-shadow(4px -1px 3px #526b6573);
+  filter: saturate(.55) drop-shadow(2px 0 3px #92aca78a);
 }
 .stage[data-sanity]:not([data-sanity="clear"]) .player-body {
   filter: contrast(1.08) drop-shadow(2px 0 #552f4666);
