@@ -53,6 +53,7 @@ let flashlightOn = false;
 let changingScene = false;
 let destination;
 let lastClickScene;
+let mousePosition;
 let frameTime;
 let viewScale = 1;
 let visibleWidth = 900;
@@ -146,6 +147,7 @@ function render() {
       Math.abs(interaction.y - player.y) <= 46)
     .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0];
   if (next !== nearby) showInteractionCue(next);
+  updateCursor();
 }
 
 function drawCharacter(context, id, pose, running = false, distance = 0, facing = 1, direction = 0) {
@@ -339,17 +341,36 @@ function clearMovement() {
   }
 }
 
+function worldPoint(clientX, clientY) {
+  const bounds = world.getBoundingClientRect();
+  return { x: (clientX - bounds.left) / viewScale, y: (clientY - bounds.top) / viewScale };
+}
+
+function interactionAt({ x, y }) {
+  return sceneInteractions.find(({ outline: [left, top, width, height] }) =>
+    x >= left && x <= left + width && y >= top && y <= top + height
+  );
+}
+
+function updateCursor() {
+  if (!mousePosition) return;
+  const point = worldPoint(mousePosition.x, mousePosition.y);
+  const interaction = interactionAt(point);
+  const discoverable = scene.floor !== "3F" || interaction === nearby;
+  const cursor = interaction && discoverable
+    ? interaction.kind || "transition"
+    : point.y >= scene.floorY ? "move" : "default";
+  if (viewport.dataset.cursor !== cursor) viewport.dataset.cursor = cursor;
+}
+
 function aimAtClick(event) {
   if (event.detail === 0 || map.open || changingScene || event.target.closest(".minimap")) return;
   if (event.detail === 1) lastClickScene = sceneId;
   if (lastClickScene !== sceneId) return;
 
-  const bounds = world.getBoundingClientRect();
-  const x = (event.clientX - bounds.left) / viewScale;
-  const y = (event.clientY - bounds.top) / viewScale;
-  const interaction = sceneInteractions.find(({ outline: [left, top, width, height] }) =>
-    x >= left && x <= left + width && y >= top && y <= top + height
-  );
+  const point = worldPoint(event.clientX, event.clientY);
+  const { x, y } = point;
+  const interaction = interactionAt(point);
   if (!interaction && y < scene.floorY) return;
   destination = {
     x: interaction?.x ?? clamp(x, 33, scene.width - 33),
@@ -472,6 +493,15 @@ for (const button of document.querySelectorAll("[data-move]")) {
   }
 }
 viewport.addEventListener("click", aimAtClick);
+viewport.addEventListener("pointermove", (event) => {
+  if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+  mousePosition = { x: event.clientX, y: event.clientY };
+  updateCursor();
+});
+viewport.addEventListener("pointerleave", () => {
+  mousePosition = undefined;
+  delete viewport.dataset.cursor;
+});
 touchInteract.addEventListener("click", () => interact());
 touchFlashlight.addEventListener("click", toggleFlashlight);
 function openMap() {

@@ -262,3 +262,15 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #07100e; }
   .home-content { padding: 26px; width: min(100%, 400px); }
   .home-title h1 { margin-bottom: 28px; }
 }
+
+:root {
+  --cursor-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M3 3l20 11-9 2.5-3.5 8z' fill='%230d1714' stroke='%23040b08' stroke-width='3.2' stroke-linejoin='round'/%3E%3Cpath d='M3 3l20 11-9 2.5-3.5 8z' fill='%23b58b52' stroke='%23f4d5a0' stroke-width='1.25' stroke-linejoin='round'/%3E%3Cpath d='M5 5l8.5 10.8-2.7 6.5z' fill='%237e5936'/%3E%3C/svg%3E") 3 3;
+  --cursor-move: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M14 3v5m0 12v5M3 14h5m12 0h5m-7-4 4 4-4 4m-8 0-4-4 4-4' fill='none' stroke='%230b1613' stroke-width='3.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M14 3v5m0 12v5M3 14h5m12 0h5m-7-4 4 4-4 4m-8 0-4-4 4-4' fill='none' stroke='%23e6d4aa' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='14' cy='14' r='1.4' fill='%23f8dc9f' stroke='%23263127' stroke-width='1'/%3E%3C/svg%3E") 14 14;
+  --cursor-door: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3E%3Cpath d='M16 6h8v18h-8M5 15h13m-5-5 5 5-5 5' fill='none' stroke='%230a1410' stroke-width='4.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 6h8v18h-8M5 15h13m-5-5 5 5-5 5' fill='none' stroke='%23eed4a2' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 15 15;
+  --cursor-item: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M14 3l11 11-11 11L3 14z' fill='%2316221b' stroke='%23040a08' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M14 3l11 11-11 11L3 14z' fill='%233a3324' stroke='%23f1d494' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M14 9l5 5-5 5-5-5z' fill='%23e3ac64'/%3E%3C/svg%3E") 14 14;
+}
+.home, .stage, .viewport, .home button:disabled { cursor: var(--cursor-arrow), default; }
+.home button:not(:disabled), .stage button:not(:disabled) { cursor: var(--cursor-arrow), pointer; }
+.viewport[data-cursor="move"] { cursor: var(--cursor-move), crosshair; }
+.viewport[data-cursor="transition"], .stage .interaction-cue[data-interaction="transition"] { cursor: var(--cursor-door), pointer; }
+.viewport[data-cursor="item"], .stage .interaction-cue[data-interaction="item"] { cursor: var(--cursor-item), pointer; }
