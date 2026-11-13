@@ -96,7 +96,9 @@ function readSave() {
       visited = new Set(saved.visited.filter((id) => Object.hasOwn(scenes, id)));
     }
     if (Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-      player.x = clamp(saved.x, 33, scenes[sceneId].width - 33);
+      const width = scenes[sceneId].width;
+      const previousWidth = saved.sceneWidth > 0 ? saved.sceneWidth : sceneId.endsWith("-hall") ? 1800 : width;
+      player.x = clamp(saved.x * width / previousWidth, 33, width - 33);
       player.y = clamp(saved.y, scenes[sceneId].back, scenes[sceneId].front);
     }
     player.facing = saved.facing === -1 ? -1 : 1;
@@ -121,6 +123,7 @@ function save() {
   try {
     localStorage.setItem(saveKey, JSON.stringify({
       scene: sceneId,
+      sceneWidth: scene.width,
       visited: [...visited],
       x: player.x,
       y: player.y,
@@ -144,7 +147,6 @@ function save() {
 function updateViewSize() {
   viewScale = Math.max(viewport.clientHeight / sceneHeight, viewport.clientWidth / scene.width) || 1;
   visibleWidth = viewport.clientWidth / viewScale;
-  Lighting.resize(viewport.clientWidth, viewport.clientHeight);
   render();
 }
 
@@ -165,10 +167,9 @@ function render() {
   Lighting.draw({
     dark: !hasAmbientLight(),
     enabled: flashlightOn || emptyFlashTimer !== undefined,
-    x: (player.x - camera + Math.cos(aim) * height * .15) * viewScale,
-    y: top + (player.y - height * (sprinting ? .66 : .60) + Math.sin(aim) * height * .09) * viewScale,
+    x: player.x + Math.cos(aim) * height * .15,
+    y: player.y - height * (sprinting ? .66 : .60) + Math.sin(aim) * height * .09,
     direction: aim,
-    scale: viewScale,
   });
 
   const next = sceneInteractions
@@ -323,6 +324,8 @@ function showScene(id, image, arrival) {
   sprinting = false;
   get("location").textContent = "住院部 / " + scene.name;
   world.style.width = scene.width + "px";
+  world.classList.toggle("dark", !hasAmbientLight());
+  Lighting.resize(scene.width, sceneHeight);
   backdrop.dataset.floor = scene.floor;
   backdrop.dataset.art = scene.art;
   backdrop.classList.toggle("mirrored", Boolean(scene.mirrored));
@@ -354,13 +357,6 @@ function buildInteractionCues() {
       items.push(item);
     }
   }
-  const thresholds = scene.doors.filter((door) => door.side === "south").map(({ outline }) => {
-    const threshold = document.createElement("span");
-    threshold.className = "door-threshold";
-    threshold.setAttribute("aria-hidden", "true");
-    positionOutline(threshold, outline);
-    return threshold;
-  });
   if (scene.art.startsWith("stairs-")) {
     const plate = document.createElement("span");
     plate.className = "stair-floor-plate";
@@ -390,8 +386,36 @@ function buildInteractionCues() {
     });
     return [interaction.id, button];
   }));
-  markers.replaceChildren(...thresholds, ...itemSprites, ...markerButtons.values());
+  markers.replaceChildren(buildForegroundWall(), ...itemSprites, ...markerButtons.values());
   showInteractionCue(undefined);
+}
+
+function buildForegroundWall() {
+  const foreground = document.createElement("div");
+  foreground.className = "foreground-wall";
+  foreground.setAttribute("aria-hidden", "true");
+  const doors = scene.doors.filter((door) => door.side === "south").sort((a, b) => a.x - b.x);
+  let wallStart = 0;
+  for (const { outline } of doors) {
+    const [left, , width] = outline;
+    addWallSegment(left);
+    const threshold = document.createElement("span");
+    threshold.className = "door-threshold";
+    positionOutline(threshold, outline);
+    foreground.append(threshold);
+    wallStart = left + width;
+  }
+  addWallSegment(scene.width);
+  return foreground;
+
+  function addWallSegment(end) {
+    if (end <= wallStart) return;
+    const shadow = document.createElement("span");
+    shadow.className = "wall-shadow";
+    shadow.style.left = wallStart + "px";
+    shadow.style.width = (end - wallStart) + "px";
+    foreground.append(shadow);
+  }
 }
 
 function positionOutline(element, [left, top, width, height]) {
@@ -693,7 +717,7 @@ async function prepareCharacter(id, pace) {
   const key = id + "-" + pace;
   if (characterArt.has(key)) return characterArt.get(key);
   const image = new Image();
-  image.src = "assets/" + key + ".webp";
+  image.src = "assets/" + key + (pace === "run" ? "-clean" : "") + ".webp";
   await image.decode();
   characterArt.set(key, image);
   return image;

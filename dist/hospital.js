@@ -11,6 +11,8 @@ const Hospital = (() => {
   ];
   const scenes = {};
   const start = "2F-room-1";
+  const corridorArtWidth = 1800;
+  const corridorWidth = 2040;
   // Threshold and frame height are measured in the rendered 600px-high scene.
   const geometry = {
     ward: { floorY: 456, doorHeight: 264 },
@@ -45,16 +47,17 @@ const Hospital = (() => {
     const stairs = id + "-stairs";
     const hallArt = "corridor-" + id.toLowerCase();
     const hallGeometry = artworkGeometry[hallArt];
+    const corridorScale = corridorWidth / corridorArtWidth;
     const doorCenter = (key) => {
       const [left, , width] = hallGeometry.outlines[key];
       return left + width / 2;
     };
     const doors = rooms.map((label, slot) =>
-      door("room-" + (slot + 1), [doorCenter("room-1"), 665, 1135][slot], slot === 0 ? "north" : "south",
+      door("room-" + (slot + 1), [doorCenter("room-1"), 665, 1135][slot] * corridorScale, slot === 0 ? "north" : "south",
         label, id + "-room-" + (slot + 1), "return")
     );
-    doors.push(door("stairs", doorCenter("stairs"), "north", "楼梯间", stairs, "hall"));
-    scenes[hall] = { floor: id, name: "走廊", art: hallArt, width: 1800, doors };
+    doors.push(door("stairs", doorCenter("stairs") * corridorScale, "north", "楼梯间", stairs, "hall"));
+    scenes[hall] = { floor: id, name: "走廊", art: hallArt, width: corridorWidth, doors };
 
     rooms.forEach((name, slot) => {
       const roomId = id + "-room-" + (slot + 1);
@@ -103,6 +106,11 @@ const Hospital = (() => {
       const south = portal.side === "south";
       portal.y = south ? scene.front : scene.back;
       portal.outline = south ? [portal.x - 73, 554, 146, 46] : scene.outlines[portal.id];
+      if (art === "corridor" && !south) {
+        const [left, top, width, height] = portal.outline;
+        const scale = scene.width / corridorArtWidth;
+        portal.outline = [left * scale, top, width * scale, height];
+      }
       if (scene.mirrored && !south) {
         const [left, top, width, height] = portal.outline;
         portal.outline = [scene.width - left - width, top, width, height];

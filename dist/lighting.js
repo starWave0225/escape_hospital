@@ -21,7 +21,7 @@ const Lighting = (() => {
     context.fill();
   }
 
-  function draw({ dark, enabled, x, y, direction, scale }) {
+  function draw({ dark, enabled, x, y, direction }) {
     canvas.hidden = !dark && !enabled;
     if (canvas.hidden) return;
 
@@ -34,8 +34,7 @@ const Lighting = (() => {
 
     context.save();
     context.translate(x * resolution, y * resolution);
-    const unit = scale * resolution;
-    context.scale(unit, unit);
+    context.scale(resolution, resolution);
     if (dark) {
       // A trace of ambient light at arm's reach keeps the player's silhouette readable.
       const ambient = context.createRadialGradient(0, 18, 4, 0, 18, 109);
