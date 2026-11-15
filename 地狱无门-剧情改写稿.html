@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>地狱无门 · 剧情改写稿</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fcfaf5;
+      --canvas: #eeeae1;
+      --ink: #292721;
+      --muted: #5e574e;
+      --rule: #d6ccbc;
+      --accent: #813e32;
+      --serif: "Noto Serif SC", "Songti SC", SimSun, serif;
+      --sans: system-ui, "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 1rem/1.8 var(--sans); }
+    .toolbar { background: #292721; color: var(--paper); }
+    .toolbar-inner {
+      display: flex; align-items: center; flex-wrap: wrap; gap: .65rem 1.25rem;
+      max-width: 64rem; margin: auto; padding: .7rem clamp(1rem, 4vw, 2.5rem);
+    }
+    nav { display: flex; flex-wrap: wrap; gap: .35rem 1.25rem; }
+    nav a { color: inherit; text-underline-offset: .3em; }
+    .status { flex: 1; font-size: .82rem; color: #ddd3c3; }
+    button {
+      border: 1px solid #a45b4b; border-radius: .3rem; padding: .42rem .85rem;
+      color: #fffaf2; background: var(--accent); font: inherit; cursor: pointer; white-space: nowrap;
+    }
+    button:hover { background: #9b4a3a; }
+    :focus-visible { outline: 2px solid #b16a4f; outline-offset: 4px; }
+    main {
+      width: min(60rem, calc(100% - 2rem)); margin: clamp(1rem, 4vw, 2.5rem) auto;
+      padding: clamp(1.25rem, 6vw, 4.5rem); background: var(--paper); border: 1px solid var(--rule);
+    }
+    h1, h2, h3 { line-height: 1.35; text-wrap: balance; }
+    h1, h2 { font-family: var(--serif); }
+    h1 { font-size: clamp(2.65rem, 8vw, 5rem); margin: 0 0 .55rem; letter-spacing: .06em; }
+    h2 { margin: 0 0 1.35rem; font-size: clamp(1.75rem, 4vw, 2.4rem); }
+    h3 { font-size: 1.1rem; margin: 1.8rem 0 .65rem; }
+    p { margin: 0 0 .85rem; }
+    .subtitle { margin: 0; font-weight: 650; letter-spacing: .14em; color: var(--accent); }
+    .intro { margin: 1.1rem 0 0; max-width: 46rem; color: var(--muted); }
+    .sheet { margin-top: 2rem; padding-top: 1.8rem; border-top: 1px solid var(--rule); scroll-margin-top: 1rem; }
+    [contenteditable] { border-radius: .12rem; overflow-wrap: anywhere; }
+    [contenteditable]:focus { outline: 2px solid #b16a4f; outline-offset: .55rem; }
+    blockquote {
+      margin: .8rem 0 1rem; padding: .25rem 0 .25rem 1rem;
+      border-left: 3px solid var(--accent); color: #594139;
+    }
+    blockquote p { margin: .2rem 0; }
+    .stages { margin: 0; padding-left: 1.65rem; }
+    .stages li { padding-left: .25rem; }
+    .stages li::marker { color: var(--accent); font-weight: 700; }
+    .stages h3 { margin: 1.3rem 0 .45rem; }
+    .stages p { margin: .2rem 0; }
+    .notes { padding: 1rem 1.2rem; background: #f2ece0; border: 1px solid var(--rule); }
+    .notes ul { margin: 0; padding-left: 1.3rem; }
+    .notes li + li { margin-top: .45rem; }
+    @media (max-width: 38rem) {
+      .toolbar-inner { gap: .45rem 1rem; }
+      nav { flex-basis: 100%; }
+      main { width: calc(100% - 1rem); }
+    }
+    @media print {
+      .toolbar { display: none; }
+      body, main { background: #fff; }
+      main { width: 100%; margin: 0; padding: 0; border: 0; }
+      h2, h3 { break-after: avoid; }
+      [contenteditable]:focus { outline: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="toolbar-inner">
+      <nav aria-label="文档目录">
+        <a href="#story">剧情文本</a>
+        <a href="#flow">玩家流程</a>
+        <a href="#notes">设定与待定事项</a>
+      </nav>
+      <span class="status" id="status" role="status">点击正文即可编辑。按 Ctrl+S 或点「下载 HTML」保存副本。</span>
+      <button id="download" type="button" aria-keyshortcuts="Control+S Meta+S">下载 HTML</button>
+    </div>
+  </header>
+
+  <main>
+    <header id="cover-text" contenteditable="true" spellcheck="false" aria-label="标题和故事简介" tabindex="0">
+      <h1>地狱无门</h1>
+      <p class="subtitle">剧情文本与玩家流程 · 改写稿</p>
+      <p class="intro">林一留学归来，在一间陌生的病房里醒来。他记得自己是谁，却想不起从机场到医院这段路。母亲答应来接，表叔叫他回房等着。直到他在值班室看见自己的名字，才知道今晚确实有人来接他，接他去的地方还在医院里。</p>
+    </header>
+
+    <section id="story" class="sheet" aria-labelledby="story-heading">
+      <h2 id="story-heading">剧情文本</h2>
+      <article id="story-text" contenteditable="true" spellcheck="false" aria-label="剧情正文" tabindex="0">
+        <h3>一、201 病房</h3>
+        <p>林一醒来时，窗外已经黑了。他想坐起来，才发现手腕被捆在床上。右手边的床垫底下压着一把餐刀，刀柄露在外面，像是特意留给他摸到的。他用餐刀挣开束缚，赤脚踩到地上，两条腿麻得站不住，只好扶着床沿等了一会儿。</p>
+        <p>他记得自己叫林一，也记得这趟回来是为了看父母。母亲冯如近来不接电话，妹妹冯萍说她住了院。他打算见过母亲，再去找父亲林海，问问毕业后进林氏集团的事。机场也记得。来接他的人说「林先生让我来的」，他把行李递过去，上了车。再往后，只剩下一截白袖子和病床上方的灯。有人叫他别动，接着灯也没了。</p>
+        <p>门牌上写着「201」。床头柜上有一节电池。他给手电装上电池，摸到走廊，顺楼梯下到一楼。正门外亮着灯，隔着玻璃能看见街上的车。挂号室的人拦下他，对了对腕带，说接他的家属已经联系过，叫他回去等。他问是哪一位。对方把窗口推上了。</p>
+        <p>他记得母亲的手机号。二楼 202 值班室一时没人，他进去拨了电话。</p>
+        <blockquote>
+          <p>「妈。」</p>
+          <p>「你怎么回来了？」</p>
+          <p>「我在医院。你能来接我吗？」</p>
+          <p>她停了一下，说：「能。你回病房等我，晚上九点。」</p>
+        </blockquote>
+        <p>直到挂断电话，林一才发现自己没告诉她是哪家医院。</p>
+
+        <h3>二、来接他的人</h3>
+        <p>先来的是表叔林博览。他把外套和手机递给林一，说手机跟行李一起留在车上，刚取回来。林一问自己怎么会在这里。表叔拉开椅子，坐到了他和门之间。</p>
+        <blockquote>
+          <p>「你在车上一直喊你爸。医生来了，你自己答应进来休息两天。你那会儿太累，大概忘了。」</p>
+          <p>「我爸呢？」</p>
+          <p>「这两天好一点了。医生说你们家可能有点遗传上的问题，你先别自己吓自己。晚上你妈就来。」</p>
+        </blockquote>
+        <p>林一听见「好一点了」，竟先松了口气。四岁那年父母离婚，林海常年在海外，家里真出了事，他和母亲最先想到的都是表叔。林博览会送钱来，也会在学校开家长会的日子准时出现。母亲说，父亲和表叔光着屁股一起长大。表叔学法律，国内的生意交到他手里，父亲在海外才能放心。后来父亲回国，给母亲置了一套房，又出钱让林一留学，还是表叔帮他办手续、送他进机场。</p>
+        <p>手机里还有送行录像。冯萍在镜头外笑，背景里有一首热闹得有点过分的歌。母亲帮他把领子翻好，说：「过年也不用回来，我去看你。」画面快结束时，表叔指指手机，说：「有事直接打给我，号码别删。」</p>
+        <p>林一刚放下手机，冯萍的消息就进来了。</p>
+        <blockquote>
+          <p>「刀是我放的。你那会儿没醒，我穿了护士的衣服才进去。」</p>
+          <p>「妈住院的事是真的，但她前几天已经回家了。今天你一下飞机，表叔就叫我别问你去了哪。」</p>
+          <p>「我进不去第二次了。哥，别在 201 等。」</p>
+        </blockquote>
+        <p>林一走到门口。表叔刚才坐过的那把椅子，还对着床。</p>
+
+        <h3>三、九点，旧住院楼</h3>
+        <p>他在二楼走廊被一个年轻女人叫住。她看过父亲手机里他毕业时的照片，认得他。他只听过她的名字。她叫林遥，是林海在海外生的女儿。父亲回国后原想把几个孩子叫来吃饭，林一到了机场，林遥已经在这里住了几天。</p>
+        <p>她问：「也有人说今晚接你回家吗？」父亲被带走那天同样收好了行李。林博览说是回家。后来林遥被带去旧住院楼做检查，隔着一扇门听见父亲叫她的小名。陪她去的人说她听错了。她说，叫第二声之前，父亲还咳了两下。</p>
+        <p>林一折回 202。母亲约的是九点，值班桌上的接送单也是九点。单子上写着「201，林一」，目的地是旧住院楼。接收栏里已经填好了房号。</p>
+        <p>林遥走过连廊。她记得旧楼后面有一扇门，也记得转送时护士用的是三楼档案室里那张带后院的旧图。林一回 201 拿手机和手电，把外套留在床上。他给冯萍回了一条消息：「他们九点来。我去找后门，你在后院外头等我。」</p>
+
+        <h3>四、302 档案室</h3>
+        <p>三楼没有灯。手电照到一张旧平面图，连廊穿过旧住院楼，另一端有门通向后院。那扇门后面有一段通往街上的小路。林一把图拍下来，翻到夹在底下的转送记录。父亲、林遥的弟弟和妹妹，都被送到了旧楼。林博览是每一次转送的联络人。</p>
+        <p>还有两份同一天的探视记录。林海那份写「女儿拒绝探视」，林遥那份写「父亲不愿见她」。两句话都是林博览转达的。林遥说，那天她换了件衣服，在等候处坐到熄灯。说完她把纸放回桌上，出去看楼梯间有没有人。</p>
+        <p>林一用手电照着自己的入院记录。「本人同意」后面有时间。那时候他的航班还没落地，林博览说的那场车上的谈话根本没发生过。他把航班信息和这页记录一并拍下来。林遥在档案室外敲了两下，说刚听见楼下有人在找他。两人按旧图找到了连廊。</p>
+
+        <h3>五、旧楼里的名单</h3>
+        <p>连廊尽头是旧楼的接收台。台上压着一张值班预排表，写着每间房准备收谁。林遥先认出了父亲的名字，接着是她弟弟和妹妹。最后一栏是林一，房号和 202 看到的一样。备注写着「落地后由林博览安排接车」。</p>
+        <p>接收台在三天前就签收了这张表。那时林一还在国外。送来表的人签了「林博览」，留的是林一手机里一直存作「表叔」的那个号码。表上还写着，有人来找这几个人，一律答复「已经由家属接回」，再通知林博览。林一把预排表和 302 拍到的记录一并发给冯萍。表叔说是临时进院休息两天，原来连房间都是在他上飞机以前定好的。</p>
+        <p>林海还在旧楼里。林遥叫了一声「爸」，他循着声音抬起头，问她那天为什么没来。</p>
+        <blockquote>
+          <p>「我来了。我一直在外面。」</p>
+        </blockquote>
+        <p>林海从枕头底下取出一张纸。他听见另外两个孩子的声音时，就记下日期。有人来给他送水，他也问，他们今天肯不肯见我。林一对着门牌核实，另外两个孩子都还在旧楼，隔着锁着的门能听见他们答应。</p>
+        <p>父亲认出了林一，问他那边的课是不是都上完了。林一说上完了。父亲笑了一下，说早就和表叔谈过，等他毕业回来，就把国内的业务慢慢交给他。「他当时就问我一句，你自己的孩子回来了，就没我的位置了？」父亲说，「我说哪儿的话，吃饭还给你留着座呢。」走廊另一头有人喊了声「哥」。是林博览。父亲手一抖，那张纸滑到了地上。</p>
+        <p>林遥想扶父亲走，他的脚刚着地，腿就软了。林一捡起纸，用手机拍下父亲记的日期。父亲让林遥把另外两个孩子的房号也记好。等连廊那头又有人叫林一回病房，两人才从另一端的门退到后院。</p>
+
+        <h3>六、最后一道门</h3>
+        <p>走到后院时，母亲打来电话，说已经在 201 等他。林一停了一下。手机屏幕上还是那张预排表。</p>
+        <blockquote>
+          <p>「爸那天，你也是这么跟他说的？」</p>
+          <p>「你爸是博览接的。」</p>
+          <p>「我的房间也是他定的。三天前就定了。你刚才为什么还叫我回去等？」</p>
+          <p>「你在国外的时候，他答应过我，只要你待在那里，就不接你这一趟。」</p>
+          <p>「他叫冯萍别问我去了哪里。你知道她也在找我吗？」</p>
+          <p>「他已经叫她回家了。冯萍是他的孩子，他总会让她回家。」</p>
+        </blockquote>
+        <p>林一想起母亲去林海家打扫的那些日子。她总说林海连自己都照顾不好。父亲那时还劝她，有了新生活就好好过。她听完没说话，第二天照样带了钥匙过去。现在她在电话里又问了一遍：「你为什么非要回来找他？」</p>
+        <p>林一说：「我也回来找你。」电话那头静了一会儿。</p>
+        <blockquote><p>「天堂有路你不走。」</p></blockquote>
+        <p>通话结束。林一和林遥走到后院尽头，门外就是街。玩家亲手打开门，走出医院。冯萍在街对面等他们。林一把父亲和另外两个孩子的房号给她看，说得报警，让人来接他们。说到「接」字的时候，他停了一下，把父亲记下的日期也发了过去。</p>
+        <p>片尾回到留学那天的录像。母亲把林一的衣领翻好，又说了一遍：「过年也不用回来，我去看你。」镜头里，林一转过身进了闸口。这一次，镜头在母亲挥手的时候多停了几秒，背景里的歌继续唱了下去。</p>
+      </article>
+    </section>
+
+    <section id="flow" class="sheet" aria-labelledby="flow-heading">
+      <h2 id="flow-heading">玩家流程</h2>
+      <div id="flow-text" contenteditable="true" spellcheck="false" aria-label="玩家流程正文" tabindex="0">
+        <ol class="stages">
+          <li>
+            <h3>201 病房与一楼正门</h3>
+            <p><strong>行动</strong>　从床垫下找到餐刀，挣开束缚，拿床头电池，出门下楼试走正门。</p>
+            <p><strong>推进</strong>　103 挂号室要求等家属。玩家从腕带和房号确认自己被登记在这里，回二楼找电话。林一记得亲人和出行目的，接机后的经历断断续续。</p>
+          </li>
+          <li>
+            <h3>202 求助与第一次探视</h3>
+            <p><strong>行动</strong>　打给母亲。见到林博览，取回手机。查看送行录像和冯萍的消息。</p>
+            <p><strong>推进</strong>　母亲约九点来接。林博览称林一自愿入院，并提起医生怀疑家族遗传。冯萍承认自己留了餐刀，让林一离开 201。</p>
+          </li>
+          <li>
+            <h3>核对今晚的接送单</h3>
+            <p><strong>行动</strong>　在二楼遇到同父异母的妹妹林遥，听她讲林海被接走的经过。回 202 找自己的接送单。</p>
+            <p><strong>推进</strong>　同样是九点，纸上的去处却是旧住院楼。去 302 找旧图，找一条能到院外的路。九点是剧情时间。</p>
+          </li>
+          <li>
+            <h3>302 档案室与连廊</h3>
+            <p><strong>行动</strong>　用手电探索断电的三楼，拍下旧图、转送名单和探视记录。对照自己的入院记录和航班时间。需要时可到 101 拿备用电池。</p>
+            <p><strong>推进</strong>　平面图指出旧楼可以通往后院。探视记录让林遥发现父亲也在等她。林一查到「本人同意」的时间早于航班落地。拿到路线后，与林遥进入连廊。</p>
+          </li>
+          <li>
+            <h3>旧楼接收台与家人所在病房</h3>
+            <p><strong>行动</strong>　把 202 的房号、302 的「本人同意」记录和旧楼预排表对上。核对签收时间与表叔的号码，拍照发给冯萍。依房号找到林海和其余两名弟妹。</p>
+            <p><strong>推进</strong>　玩家可以证明林博览在林一回国前已经安排接机和关押，并一直控制家人的联络。林一拿到三人的房号和仍在旧楼的证据。林博览赶到，林一和林遥往后院撤。</p>
+          </li>
+          <li>
+            <h3>后院外门</h3>
+            <p><strong>行动</strong>　接完冯如的电话，亲手打开外门，和林遥逃出医院。把林海和其余弟妹的下落交给在外面接应的冯萍。</p>
+            <p><strong>结尾</strong>　电话揭开冯如的选择和冯萍的身世。出门后播放完整的送行片段，接回开头响过的歌曲。</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="notes" class="sheet" aria-labelledby="notes-heading">
+      <h2 id="notes-heading">设定与待定事项</h2>
+      <div id="notes-text" class="notes" contenteditable="true" spellcheck="false" aria-label="设定与待定事项正文" tabindex="0">
+        <ul>
+          <li><strong>林博览</strong>　林海的表弟、林一的表叔，也是幕后元凶。他掌管林氏集团国内业务。林海要让林一接班，他想保住实权，也嫉妒林海能把子女重新聚到身边。预排表证明他事先做了安排，互相矛盾的探视记录交代他怎样拆散父子和手足。</li>
+          <li><strong>冯如</strong>　林一和冯萍的母亲。林一四岁时，她与林海因聚少离多离婚。林博览曾陪她求医，两人后来有了冯萍。林海回国后给过她房子，她也常去他家打扫。林一留学的钱由林海出，冯如盼的是林一留在国外。她曾住院，出院后明知林一会被转去旧楼，仍答应把他留在 201 等人。</li>
+          <li><strong>两个妹妹</strong>　冯萍和林一一起长大，是同母异父的妹妹。她知道母亲出院、表叔叫她别问，以及林一的病房，开场时还没查到旧楼名单。林遥是林海在海外所生的三个孩子之一，是林一的同父异母妹妹。她陪林一逃院，另两名弟妹的姓名暂留空。</li>
+          <li><strong>场景与交互</strong>　沿用 201、202、101、103 和 302 的现有房间。束缚与餐刀、电话、纸面线索、正门、连廊、旧楼和后院出口是剧情所需的交互或场景。游戏化的追逐和倒计时可在关卡设计时决定。</li>
+          <li><strong>结尾</strong>　当前主线先写林一和林遥出去求援，林海和另两名弟妹的位置已经交代。是否扩写后续营救、是否让冯萍在片尾得知身世，以及歌曲选用哪一首，仍可调整。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const editors = [...document.querySelectorAll('[contenteditable]')];
+    const status = document.querySelector('#status');
+    const saveHint = status.textContent;
+    const initialText = editors.map(editor => editor.innerHTML);
+    const draftKey = 'escape-hospital-manuscript:' + location.pathname;
+
+    try {
+      const draft = JSON.parse(localStorage.getItem(draftKey));
+      if (Array.isArray(draft?.original) && draft.original.length === editors.length &&
+          draft.original.every((html, index) => html === initialText[index]) &&
+          Array.isArray(draft.edits) && draft.edits.length === editors.length &&
+          draft.edits.every(html => typeof html === 'string')) {
+        editors.forEach((editor, index) => { editor.innerHTML = draft.edits[index]; });
+        status.textContent = '已恢复本浏览器里的草稿。';
+      }
+    } catch {
+      // Downloads still work when local storage is unavailable.
+    }
+
+    document.querySelector('main').addEventListener('input', () => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          original: initialText,
+          edits: editors.map(editor => editor.innerHTML),
+        }));
+        status.textContent = '草稿已存于本浏览器。下载 HTML 可带走修改。';
+      } catch {
+        status.textContent = '请下载 HTML 保存当前修改。';
+      }
+    });
+
+    function downloadHtml() {
+      const copy = document.documentElement.cloneNode(true);
+      copy.querySelector('#status').textContent = saveHint;
+      const html = '<!doctype html>\n' + copy.outerHTML;
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '地狱无门-剧情改写稿.html';
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      status.textContent = '已发起下载。打开下载的 HTML 可继续编辑。';
+    }
+
+    document.querySelector('#download').addEventListener('click', downloadHtml);
+    document.addEventListener('keydown', (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey ||
+          event.isComposing || event.key.toLowerCase() !== 's') return;
+      event.preventDefault();
+      if (!event.repeat) downloadHtml();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+.investigation #browser-view.map-window {
+  --map-page: #eef3f3;
+  --map-card: #fcfefe;
+  --map-line: #bccdcc;
+  --map-ink: #183434;
+  --map-muted: #466466;
+  --map-action: #0b6258;
+  background: var(--map-page);
+  color: var(--map-ink);
+}
+.investigation .map-window :is(.site-header, .case-head) { display: none; }
+.investigation .map-window :is(.case-page, .case-sidebar, .site-footer) :focus-visible { outline-color: var(--map-action); }
+.investigation .map-window .case-grid { grid-template-columns: minmax(0, 1fr); padding-top: 1.25rem; }
+.investigation .map-window .case-page {
+  --paper: var(--map-card);
+  --paper-ink: var(--map-ink);
+  --paper-muted: var(--map-muted);
+  --paper-line: var(--map-line);
+  --paper-accent: var(--map-action);
+  border: 1px solid var(--map-line);
+  border-radius: 0.65rem;
+  background: var(--map-card);
+  box-shadow: 0 0.4rem 1.35rem #214e4e14;
+}
+.investigation .map-window .source-header { padding: 0.85rem clamp(0.85rem, 3vw, 1.45rem); }
+.investigation .map-window .source-header h2 { font: 750 clamp(1.32rem, 2.5vw, 1.85rem)/1.32 var(--sans); }
+.investigation .map-window .source-header > :not(h2) { letter-spacing: 0.04em; }
+.investigation .map-window .source-body { padding: 0; }
+.investigation .map-window .site-footer { color: var(--map-muted); border-color: var(--map-line); }
+.investigation .map-window .site-footer a { color: var(--map-action); }
+
+.investigation .map-site-toolbar {
+  display: grid; grid-template-columns: max-content minmax(0, 32rem); align-items: center;
+  justify-content: space-between; gap: .55rem 1.5rem; padding: .9rem clamp(.85rem, 3vw, 1.45rem);
+  border-bottom: 1px solid var(--map-line);
+}
+.investigation .map-site-title { margin: 0; color: var(--map-ink); font: 750 clamp(1.15rem, 2.1vw, 1.6rem)/1.3 var(--sans); }
+.investigation .map-window .map-lookup-form.lookup-form { margin: 0; gap: 0.4rem 0.55rem; }
+.investigation .map-window .map-lookup-form label { color: var(--map-ink); }
+.investigation .map-window .map-lookup-form input {
+  min-height: 2.65rem;
+  padding: 0.52rem 0.75rem;
+  border-color: var(--map-line);
+  border-radius: 0.35rem;
+  background: #f3f9f9;
+  color: var(--map-ink);
+}
+.investigation .map-window .map-lookup-form input::placeholder { color: var(--map-muted); }
+.investigation .map-window .map-lookup-form button {
+  min-height: 2.65rem;
+  padding: 0.52rem 1rem;
+  border: 1px solid #094c44;
+  border-radius: 0.35rem;
+  background: var(--map-action);
+  color: #fff;
+  white-space: nowrap;
+}
+.investigation .map-window .map-lookup-form button:hover:not(:disabled) { background: #094c44; }
+.investigation .map-window .map-lookup-feedback {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--map-action);
+  font-size: 0.85rem;
+}
+.investigation .map-window .map-lookup-feedback:empty { display: none; }
+
+.investigation .map-window .map-lookup-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13.75rem, 17rem);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 1rem clamp(.85rem, 3vw, 1.45rem) 1.25rem;
+}
+.investigation .map-window .map-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  border: 1px solid var(--map-line);
+  border-radius: 0.4rem;
+  background: #deecec;
+}
+.investigation .map-window .map-lookup-figure { min-width: 0; margin: 0; }
+.investigation .map-window .map-lookup-figure figcaption { margin-top: .35rem; color: var(--map-muted); font-size: .78rem; }
+.investigation .map-window .map-lookup-panel {
+  min-width: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--map-line);
+  border-radius: 0.4rem;
+  background: #f3f8f6;
+  color: var(--map-ink);
+  overflow-wrap: anywhere;
+}
+.investigation .map-window .map-lookup-panel h3 { margin: 0 0 0.38rem; font: 750 1rem/1.4 var(--sans); }
+.investigation .map-window .map-lookup-panel > :last-child { margin-bottom: 0; }
+.investigation .map-window .map-lookup-panel ul { margin: 0.45rem 0; padding-inline-start: 1.1rem; }
+.investigation .map-window .map-lookup-panel li + li { margin-top: 0.4rem; }
+.investigation .map-window .map-result {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.38rem 0.7rem;
+  margin: 0.55rem 0;
+  font-size: 0.86rem;
+}
+.investigation .map-window .map-result > div { display: contents; }
+.investigation .map-window .map-result-card { padding-block: .7rem; }
+.investigation .map-window .map-result-card + .map-result-card { border-top: 1px solid var(--map-line); }
+.investigation .map-window .map-result dt { color: var(--map-muted); }
+.investigation .map-window .map-result dd { margin: 0; color: var(--map-ink); font-weight: 600; }
+.investigation .map-window .map-site-back { display: inline-block; margin-top: 0.85rem; font-size: 0.86rem; }
+
+.investigation .map-app-icon {
+  display: inline-grid;
+  position: relative;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border: 1px solid #e3f4f6;
+  border-radius: 22%;
+  background:
+    linear-gradient(40deg, transparent 48%, #fff 49% 53%, transparent 54%),
+    linear-gradient(104deg, #7cb983 0 36%, #f8fff4 37% 48%, #89c3d4 49% 100%);
+  box-shadow: 0 0.12rem 0.25rem #10172455;
+}
+.investigation .map-app-icon::before {
+  width: 45%;
+  height: 53%;
+  border-radius: 60% 60% 60% 12%;
+  background: #bd3d4a;
+  box-shadow: 0 0.04rem 0.13rem #63293565;
+  content: "";
+  transform: translateY(-8%) rotate(-45deg);
+}
+.investigation .map-app-icon::after {
+  position: absolute;
+  inset: 33% 43% auto;
+  width: 14%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff8ee;
+  box-shadow: none;
+  content: "";
+  transform: none;
+}
+.investigation .taskbar-button .map-app-icon { width: 1.38rem; height: 1.38rem; }
+
+@media (max-width: 690px) {
+  .investigation .map-window .case-grid { padding-top: 0.75rem; }
+  .investigation .map-window .map-lookup-layout { grid-template-columns: minmax(0, 1fr); }
+  .investigation .map-site-toolbar { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 440px) {
+  .investigation .map-window .map-lookup-form button { padding-inline: 0.75rem; }
+  .investigation .map-window .map-lookup-panel { padding: 0.65rem 0.75rem; }
+}

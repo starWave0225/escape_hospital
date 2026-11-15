@@ -1,0 +1,232 @@
+.desktop-view {
+  --desktop-ink: #f5f8ff;
+  --desktop-chrome: #121924;
+  --desktop-line: #ffffff20;
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  color: var(--desktop-ink);
+  background:
+    radial-gradient(ellipse at 54% 33%, #2474cc61 0, transparent 49%),
+    linear-gradient(134deg, #051225, #0b2653 58%, #080e25 100%);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+.desktop-view::before, .desktop-view::after {
+  position: absolute;
+  z-index: -1;
+  inset: 10% -8% 6% 23%;
+  border-radius: 56% 44% 57% 43% / 37% 55% 45% 63%;
+  background:
+    radial-gradient(ellipse at 24% 16%, #61bdff 0, #348ce6 22%, transparent 56%),
+    repeating-radial-gradient(ellipse at 64% 7%, #053876 12%, #1257ac 17%, #04316b 23%);
+  box-shadow: inset 0 0 46px #8ed8f15e, 0 35px 82px #01061475;
+  content: "";
+  transform: rotate(-26deg) scale(0.89);
+}
+
+.desktop-view::after {
+  inset: 13% 3% 5% 25%;
+  border-radius: 23% 77% 48% 52% / 60% 52% 48% 40%;
+  border: 1px solid #99dcff3d;
+  background:
+    radial-gradient(ellipse at 20% 68%, #60b9fc 0, transparent 47%),
+    repeating-radial-gradient(ellipse at 75% 84%, #1767be 16%, #0b367e 23%, #4aa7eb 30%);
+  box-shadow: inset -10px 3px 35px #9ae0ff55, inset 15px -25px 50px #071e66, 0 18px 65px #00062388;
+  transform: rotate(31deg) scale(0.83);
+}
+
+.desktop-view[hidden], .browser-view[hidden], .desktop-start[hidden] { display: none !important; }
+.desktop-shortcuts { display: grid; grid-template-columns: repeat(auto-fit, 6rem); align-content: start; gap: 0.4rem; padding: 1.1rem 0.85rem 4.5rem; }
+.desktop-shortcut {
+  display: grid;
+  grid-template-rows: 2.6rem auto;
+  justify-items: center;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.5rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  text-align: center;
+  text-shadow: 0 1px 4px #000;
+  overflow-wrap: anywhere;
+}
+.desktop-shortcut:hover, .desktop-shortcut:focus-visible { border-color: #c7ddff38; background: #a4ccff1c; }
+.desktop-icon { display: grid; place-items: center; position: relative; width: 2.45rem; height: 2.45rem; font-size: 1.3rem; font-weight: 800; line-height: 1; }
+.desktop-icon > svg, .desktop-icon > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.desktop-icon::before {
+  content: ""; width: 94%; aspect-ratio: 1; border-radius: 50%;
+  background: conic-gradient(from 80deg, #36d6a3 0deg, #64e5b3 72deg, #0bc4af 112deg, #1674d2 202deg, #2865e3 280deg, #1eb9cc 324deg, #36d6a3);
+  box-shadow: inset 0 0 .3rem #80f5db79, 0 .12rem .2rem #10172455;
+}
+.desktop-icon::after {
+  content: ""; position: absolute; top: 40%; left: 34%; width: 62%; height: 34%;
+  border-radius: 63% 0 38% 50%; transform: rotate(-9deg);
+  background: #101e3b; box-shadow: -1px -2px 2px #153c82ad;
+}
+
+.desktop-taskbar {
+  position: fixed;
+  z-index: 10;
+  inset: auto 0 0;
+  display: grid;
+  grid-template-columns: minmax(4rem, 1fr) minmax(0, auto) minmax(4rem, 1fr);
+  min-height: 3.1rem;
+  padding: 0.25rem clamp(0.4rem, 2vw, 1rem);
+  border-top: 1px solid #ffffff21;
+  background: #141d2cf2;
+  backdrop-filter: blur(18px);
+  color: #f5f8ff;
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+.taskbar-apps { grid-column: 2; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.18rem; }
+.taskbar-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.5rem;
+  min-height: 2.25rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+}
+.taskbar-button:hover, .taskbar-button[aria-pressed="true"] { border-color: #ffffff19; background: #ffffff12; }
+.taskbar-button[aria-current="page"]::after, .taskbar-button[aria-pressed="true"]::after {
+  position: absolute;
+  inset: auto 36% 0;
+  height: 2px;
+  border-radius: 2px;
+  background: #9dcfff;
+  content: "";
+}
+.taskbar-button .desktop-icon { width: 1.4rem; height: 1.4rem; font-size: 0.95rem; }
+.taskbar-start > span {
+  width: 1.25rem; height: 1.25rem; border-radius: 1px; background:
+    linear-gradient(90deg, transparent calc(50% - .75px), #141d2c 0 calc(50% + .75px), transparent 0),
+    linear-gradient(transparent calc(50% - .75px), #141d2c 0 calc(50% + .75px), transparent 0),
+    linear-gradient(130deg, #86daff, #38a5ee);
+}
+.taskbar-clock { grid-column: 3; align-self: center; justify-self: end; padding: 0.15rem 0.45rem; font-size: 0.75rem; line-height: 1.25; text-align: right; white-space: pre-line; }
+.taskbar-clock time, .taskbar-clock span { display: block; }
+
+.desktop-start {
+  position: fixed;
+  z-index: 11;
+  inset: auto auto 3.55rem 50%;
+  width: min(30rem, calc(100% - 1.5rem));
+  padding: 1rem 1.2rem 1.2rem;
+  transform: translateX(-50%);
+  border: 1px solid #ffffff26;
+  border-radius: 0.65rem;
+  background: #1d283bef;
+  color: #f5f8ff;
+  box-shadow: 0 12px 48px #0009;
+  backdrop-filter: blur(24px);
+}
+.desktop-start :is(h2, h3) { margin: 0 0 0.55rem; font-size: 0.9rem; font-weight: 650; }
+.desktop-start .desktop-shortcut { display: inline-grid; width: 6rem; vertical-align: top; }
+
+.browser-view { min-height: 100svh; padding-bottom: 3.1rem; }
+.browser-chrome {
+  --browser-ink: #eaf2ff;
+  --browser-frame: #19202b;
+  --browser-active: #232e3b;
+  position: sticky;
+  z-index: 8;
+  top: 0;
+  color: var(--browser-ink);
+  background: var(--browser-frame);
+  border-bottom: 1px solid #ffffff24;
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+.browser-tabs { display: flex; align-items: end; gap: 0.5rem; min-height: 2.35rem; padding: 0.35rem 0.45rem 0 0.65rem; }
+.browser-tab-strip { display: flex; gap: .24rem; max-width: min(100%, 64rem); min-width: 0; overflow: auto; scrollbar-width: none; }
+.browser-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: clamp(6.3rem, 18vw, 14rem);
+  min-height: 2rem;
+  min-width: 0;
+  padding: 0.3rem 0.6rem;
+  color: var(--browser-ink);
+  border-radius: 0.45rem 0.45rem 0 0;
+  font-size: 0.78rem;
+  flex: none;
+  background: #151e29;
+}
+.browser-tab.active { background: var(--browser-active); }
+.browser-tab > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browser-tab .desktop-icon { flex: none; width: 0.88rem; height: 0.88rem; }
+.browser-tab-title {
+  flex: 1; min-width: 0; padding: .1rem 0; overflow: hidden; text-overflow: ellipsis;
+  border: 0; background: transparent; color: inherit; font: inherit; white-space: nowrap; text-align: left;
+}
+.browser-tab-close, .browser-new-tab {
+  flex: none; min-width: 1.35rem; padding: .1rem .24rem; border: 0; border-radius: .24rem;
+  color: inherit; background: transparent; font: 1rem "Segoe UI", system-ui, sans-serif;
+}
+.browser-new-tab { min-width: 1.9rem; min-height: 1.85rem; margin-bottom: .1rem; }
+.browser-tab-close:hover, .browser-new-tab:hover { background: #ffffff20; }
+.browser-close, .browser-back, .browser-forward {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.1rem 0.35rem;
+  border: 0;
+  border-radius: 0.25rem;
+  color: inherit;
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1;
+}
+.browser-close { min-width: 2.65rem; margin: 0 0 0 auto; align-self: stretch; }
+.browser-close:hover { background: #b32f3d; color: #fff; }
+.browser-back:hover, .browser-forward:hover { background: #ffffff16; }
+.browser-back:disabled, .browser-forward:disabled { opacity: 0.4; cursor: default; background: transparent; }
+.browser-tools { display: flex; align-items: center; gap: 0.25rem; min-width: 0; min-height: 2.65rem; padding: 0.25rem 0.65rem; background: var(--browser-active); }
+.browser-omnibox {
+  display: flex; flex: 1 1 0; align-items: center; gap: .4rem;
+  min-width: 0; color: var(--browser-ink);
+}
+.browser-address {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.25rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid #ffffff13;
+  border-radius: 0.35rem;
+  color: #eef4fd;
+  background: #141b25;
+  font: 0.78rem/1.4 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browser-address::placeholder { color: #b0c2d8; }
+.browser-omnibox button {
+  flex: none; min-height: 1.85rem; padding: .18rem .7rem;
+  color: #e9f3ff; background: #34475d; border: 1px solid #607b96; border-radius: .3rem;
+  font: .76rem "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+.browser-omnibox button:hover { background: #435c77; }
+
+@media (max-width: 440px) {
+  .desktop-view::before, .desktop-view::after { inset: 18% -25% 15% -10%; }
+  .desktop-shortcuts { grid-template-columns: repeat(auto-fit, 5rem); padding-inline: 0.45rem; }
+  .desktop-taskbar { grid-template-columns: minmax(2.25rem, 1fr) minmax(0, auto) minmax(2.25rem, 1fr); }
+  .taskbar-clock { padding-inline: 0.15rem; font-size: 0.66rem; }
+  .browser-tabs { padding-inline: 0.4rem 0.3rem; }
+  .browser-tools { padding-inline: 0.35rem; }
+}

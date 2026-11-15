@@ -36,13 +36,12 @@
       width: min(60rem, calc(100% - 2rem)); margin: clamp(1rem, 4vw, 2.5rem) auto;
       padding: clamp(1.25rem, 6vw, 4.5rem); background: var(--paper); border: 1px solid var(--rule);
     }
-    h1, h2, h3 { line-height: 1.35; text-wrap: balance; }
+    h1, h2, h3, h4 { line-height: 1.35; text-wrap: balance; }
     h1, h2 { font-family: var(--serif); }
     h1 { font-size: clamp(2.65rem, 8vw, 5rem); margin: 0 0 .55rem; letter-spacing: .06em; }
     h2 { margin: 0 0 1.35rem; font-size: clamp(1.75rem, 4vw, 2.4rem); }
     h3 { font-size: 1.1rem; margin: 1.8rem 0 .65rem; }
     p { margin: 0 0 .85rem; }
-    .subtitle { margin: 0; font-weight: 650; letter-spacing: .14em; color: var(--accent); }
     .intro { margin: 1.1rem 0 0; max-width: 46rem; color: var(--muted); }
     .sheet { margin-top: 2rem; padding-top: 1.8rem; border-top: 1px solid var(--rule); scroll-margin-top: 1rem; }
     [contenteditable] { border-radius: .12rem; overflow-wrap: anywhere; }
@@ -52,14 +51,115 @@
       border-left: 3px solid var(--accent); color: #594139;
     }
     blockquote p { margin: .2rem 0; }
-    .stages { margin: 0; padding-left: 1.65rem; }
-    .stages li { padding-left: .25rem; }
-    .stages li::marker { color: var(--accent); font-weight: 700; }
-    .stages h3 { margin: 1.3rem 0 .45rem; }
-    .stages p { margin: .2rem 0; }
+    #flow-text { min-height: 5rem; }
+    #flow-text li + li { margin-top: .45rem; }
+    .flow-table { width: 100%; border-collapse: collapse; margin: .65rem 0 1.2rem; }
+    .flow-table th, .flow-table td { border: 1px solid var(--rule); padding: .5rem .7rem; text-align: left; vertical-align: top; }
+    .flow-table th { background: #f2ece0; }
+    .flow-table td:first-child { width: 25%; font-weight: 650; }
     .notes { padding: 1rem 1.2rem; background: #f2ece0; border: 1px solid var(--rule); }
     .notes ul { margin: 0; padding-left: 1.3rem; }
     .notes li + li { margin-top: .45rem; }
+    .relationship-hint { color: var(--muted); font-size: .87rem; }
+    .relationship-scroll {
+      overflow-x: auto; border: 1px solid #3c4d69; border-radius: .65rem;
+      background: #080d1f; scrollbar-color: #5a678c #111a30;
+    }
+    .relationship-map {
+      position: relative; isolation: isolate; min-width: 43rem; height: 36rem;
+      background:
+        radial-gradient(ellipse at 51% 47%, #20366eba, transparent 55%),
+        radial-gradient(ellipse at 88% 23%, #3827558a, transparent 41%),
+        radial-gradient(ellipse at 10% 85%, #17294baa, transparent 45%),
+        linear-gradient(150deg, #090d20, #101b38 55%, #080c1d);
+    }
+    .relationship-map::before {
+      content: ""; position: absolute; inset: 9px; border: 1px solid #a4bde224;
+      border-radius: .34rem; pointer-events: none;
+    }
+    .relationship-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .relationship-node {
+      --ring: #a5c6ee; --halo: #81a8ea4f; --portrait: #273b60; --avatar-size: 3.65rem;
+      position: absolute; z-index: 2; top: var(--y); left: var(--x);
+      transform: translate(-50%, calc(var(--avatar-size) / -2));
+      display: grid; justify-items: center; gap: .43rem; width: 5.6rem;
+      padding: 0; border: 0; color: #edf3ff; background: transparent; line-height: 1.4;
+      transition: opacity .2s;
+    }
+    .relationship-node[data-tone="plum"] { --ring: #cbb0e8; --halo: #b18ad759; --portrait: #4a345f; }
+    .relationship-node[data-tone="teal"] { --ring: #9de2dc; --halo: #75d7cf53; --portrait: #214e64; }
+    .relationship-node[data-profile="yi"] {
+      --ring: #ffe2a8; --halo: #f4ce7e76; --portrait: #6a543f; --avatar-size: 5.35rem;
+      color: #ffeac0;
+    }
+    .relationship-node:is(:hover, :focus-visible) { color: #fff0c8; background: transparent; }
+    .relationship-node:focus-visible { outline-color: #ffe2a8; }
+    .relationship-node strong {
+      padding: .06rem .47rem; border-radius: 1rem; background: #0a1227dd;
+      font-size: .9rem; font-weight: 600; letter-spacing: .04em;
+    }
+    .relationship-node[data-profile="yi"] strong { font-size: 1.07rem; }
+    .person-avatar {
+      display: grid; position: relative; place-items: center;
+      width: var(--avatar-size); height: var(--avatar-size);
+      border: 1px solid var(--ring); border-radius: 50%;
+      color: #edf3ff; font: 1.38rem var(--serif);
+      background: radial-gradient(circle at 40% 25%, var(--portrait), #10182e 80%);
+      box-shadow: inset 0 0 0 3px #090e20, inset 0 0 0 4px #b9d6ff36, 0 0 16px var(--halo);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .person-avatar::after {
+      content: ""; position: absolute; inset: -6px; border-radius: inherit; border: 1px solid var(--ring);
+      opacity: .32; pointer-events: none;
+    }
+    .person-avatar-crop {
+      position: absolute; inset: 4px; border-radius: inherit; overflow: hidden;
+      background: radial-gradient(circle at 52% 35%, var(--portrait), #10182e 88%);
+    }
+    .person-avatar img {
+      display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 35%;
+    }
+    .relationship-node:is(:hover, :focus-visible) .person-avatar {
+      transform: scale(1.08); box-shadow: inset 0 0 0 3px #0d1427, inset 0 0 0 4px var(--ring), 0 0 28px var(--halo);
+    }
+    .relationship-node.is-dimmed { opacity: .48; }
+    .relationship-tag {
+      position: absolute; z-index: 1; left: var(--x); top: var(--y); transform: translate(-50%, -50%);
+      padding: 0 .38rem; border: 1px solid #74a1e141; border-radius: .26rem;
+      color: #d2e4ff; background: #131f3a; font-size: .71rem; white-space: nowrap;
+      pointer-events: none; transition: opacity .2s;
+    }
+    .relationship-tag.secret { color: #f2cbed; border-color: #c98cc052; background: #251c38; }
+    .relationship-tag.is-dimmed { opacity: .45; }
+    .relationship-legend {
+      display: flex; flex-wrap: wrap; gap: .35rem 1.25rem; margin: .7rem 0 1.35rem;
+      padding: 0; list-style: none; color: var(--muted); font-size: .82rem;
+    }
+    .relationship-legend li::before {
+      content: ""; display: inline-block; vertical-align: middle; width: 1.35rem;
+      margin-right: .4rem; border-top: 2px solid #557bb0;
+    }
+    .relationship-legend li.secret::before { border-top: 2px dashed #a65994; }
+    .notes-original summary { cursor: pointer; color: var(--accent); margin-bottom: .55rem; }
+    .character-dialog {
+      width: min(34rem, calc(100% - 2rem)); max-height: calc(100% - 2rem);
+      padding: 1.55rem clamp(1.1rem, 5vw, 2rem); border: 1px solid #526b94; border-radius: .65rem;
+      background: radial-gradient(ellipse at 20% 0, #24375f, #101b32 65%); color: #e1e9fc;
+      box-shadow: 0 1.5rem 5rem #05071496;
+    }
+    .character-dialog::backdrop { background: #050916bb; }
+    .character-dialog header { display: flex; align-items: start; justify-content: space-between; gap: .8rem; }
+    .character-dialog h2 { margin: 0 0 1rem; color: #ffe1a8; }
+    .character-dialog button { border-color: #60779b; background: #233555; color: #edf3ff; font-size: .85rem; }
+    .character-dialog button:hover { background: #304973; }
+    .character-dialog :focus-visible, .character-dialog [contenteditable]:focus { outline-color: #e7bd7f; }
+    .character-portrait { display: block; width: min(10.5rem, 45%); aspect-ratio: 4 / 5; object-fit: cover; margin: .15rem auto 1rem; border-radius: .55rem; border: 1px solid #fbd19050; }
+    .character-profile { border-top: 1px solid #ffd29845; padding-top: .85rem; }
+    .character-profile strong { color: #fff0cf; }
+    .character-profile p:last-child { margin-bottom: .3rem; }
+    @media (prefers-reduced-motion: reduce) {
+      .relationship-node, .relationship-tag, .person-avatar { transition: none; }
+    }
     @media (max-width: 38rem) {
       .toolbar-inner { gap: .45rem 1rem; }
       nav { flex-basis: 100%; }
@@ -71,6 +171,8 @@
       main { width: 100%; margin: 0; padding: 0; border: 0; }
       h2, h3 { break-after: avoid; }
       [contenteditable]:focus { outline: none; }
+      .relationship-scroll { overflow: visible; break-inside: avoid; }
+      .relationship-map { min-width: 0; print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -78,122 +180,441 @@
   <header class="toolbar">
     <div class="toolbar-inner">
       <nav aria-label="文档目录">
-        <a href="#story">剧情文本</a>
+        <a href="#story">剧情</a>
         <a href="#flow">玩家流程</a>
-        <a href="#notes">待定事项</a>
+        <a href="#notes">人物关系图</a>
       </nav>
-      <span class="status" id="status" role="status">点击正文即可编辑。用「下载 HTML」保存文件。</span>
-      <button id="download" type="button">下载 HTML</button>
+      <span class="status" id="status" role="status">点击正文即可编辑。按 Ctrl+S 或点「下载 HTML」保存副本。</span>
+      <button id="download" type="button" aria-keyshortcuts="Control+S Meta+S">下载 HTML</button>
     </div>
   </header>
 
   <main>
-    <header id="cover-text" contenteditable="true" spellcheck="false" aria-label="标题和故事简介" tabindex="0">
-      <h1>地狱无门</h1>
-      <p class="subtitle">剧情文本与玩家流程 · 讨论稿</p>
-      <p class="intro">留学归来的大儿子被关进市直属精神病院。他等着家人来接，直到发现家里每一个失踪的人，都曾收到过同样的承诺。</p>
-    </header>
+    <h1>地狱无门</h1>
 
     <section id="story" class="sheet" aria-labelledby="story-heading">
-      <h2 id="story-heading">剧情文本</h2>
+      <h2 id="story-heading">剧情</h2>
       <article id="story-text" contenteditable="true" spellcheck="false" aria-label="剧情正文" tabindex="0">
-        <h3>一、201 病房</h3>
-        <p>他是在二楼 201 病房醒来的。床头柜上有一节电池。他装进手电，推门到了走廊。楼梯走得通，院门却过不去。挂号室的人查到他的名字，说他得等家属来接。</p>
-        <p>值班室里有电话。他拨给母亲，刚说了声「妈」，那头就问：「你怎么回来了？」他以为她在问回国的事，急着告诉她自己被关在什么地方。母亲听完说：「你回病房等着。晚上我去接你。」</p>
-        <p>先来看他的是叔叔。留学前，叔叔陪他办过手续，在机场还说过，有什么事直接找我。如今他真的来了，把入院时收走的手机和外套递给侄子，嘱咐他晚上带齐东西。临走前，他说医生怀疑是家族遗传，让侄子别再往外跑。</p>
-        <blockquote>
-          <p>「你见过我爸吗？」</p>
-          <p>「你爸这两天好一点了。」</p>
-          <p>叔叔起身走了。他这才想起来，自己没说过父亲病了。</p>
-        </blockquote>
+        <p class="intro">富家少爷、留学归来，本该风光无二的阔少回国后被关进一处神秘的精神病院，在精神类药物控制下出现了短暂的失忆，他能否逃离这所精神病院，找回自己的身份，并探寻出这一切的真相呢。</p><p class="intro">对亲密者的嫉妒，是最深的恶意 —— 东野圭吾</p><p class="intro"><b>林一 线（主角视角）</b></p><p class="intro"><b><br></b></p>
+        <p>林一是京海市第一财团林氏集团的长子，2001 年 3 月出生。他的父亲林海早年白手起家出海打拼，成立了林氏集团，留下原配妻子冯如和大儿子林一在国内。2005 年秋天，林一四岁，父母因聚少离多离了婚。</p>
+        <p>林海在事业成功后，将国内市场交给了他的表弟，法律系高材生林博览，也就是林一的表叔，两人差四岁，是光屁股一起长大的，有很深的情谊。受林海之托，林博览对自己的前嫂子颇有照顾，经常送钱并帮忙办事，在林一的感受里这个表叔甚至比爸爸还要亲近。</p>
+        <p>冯如的感情生活并不顺利，在林海走后她常出没于娱乐场所填补空缺，对于林氏集团很关注，但更多的是嫉妒和不甘心，在这种心理状态的撕扯下，她也逐渐扭曲，对林一的母爱逐渐变成了控制，以极其严苛的教育控制林一，逼迫他学习各类技能。林博览及时发现，之后的日子，他一面干涉他的教育，一面带她去做了精神类治疗，在药物的控制下，冯如有所好转。一来二去，博览成为家中常客。</p>
+        <p>但林一不知道的是，他的妈妈和林博览发生了关系，并有了两人的孩子。冯如原本想打掉孩子，是林博览劝她留下（林一一直只以为生父是妈妈在外面找的一个不负责任的情人）。林博览那时开始想，如果自己把集团国内的生意做起来，现在也有了个自己的孩子能接手集团，凭什么叫他林海定夺集团的未来。</p>
+        <p>2007 年 5 月，冯萍出生，林一六岁。林一对这个妹妹爱护有加，两人就这样一起长大。</p>
+        <p>2024 年，林海决定退居二线，回国召开了董事会会议，并把海外业务交给高管 Katty。她也是林海暗地里的情人、林画的实际生母。林博览原以为林海此番回国，会让自己掌握大权，林海却决定把机会留给年轻人，劝林博览跟自己一起钓鱼喝茶，过安稳的退休日子。</p><p>林海却在重逢的晚会上说，要送已在国内读完本科的林一出国读两年硕士，等他回来，再让他跟着博览学做生意，逐步接手国内业务。林博览感受到了威胁，觉得是时候启动计划了。</p><p>林海在海外组建了新的家庭，有了三个同父异母的弟妹林晨、林心雨、林画，但只听说过他们，没见过面。他以为三个孩子都是林海的现任妻子王多丽（Rose）所生。林晨、林心雨和林画随王多丽搬到了京海。</p>
+        <p>重逢的晚会上面，林海对冯如说了很多掏心窝子话，知道没有自己的日子拉扯林一和这个外姓的闺女冯萍不易，于是送了一套房子给她，鼓励她追求自己的幸福。</p>
+        <p>林一留学生活很顺利，时不时和母亲通话。母亲说自己常去父亲家里打扫，照顾几个孩子。冯萍在 2025 年秋读上本科，次年春天进林氏集团实习，一切都好。就是林海从 2025 年底起常忘事，有时说着话突然走神，走路也不稳当。家里已经请医生上门看过。</p>
+        <p>2026 年 4 月，王多丽在一次小手术中身亡，对外的说法是医疗事故。林海此前已有的症状越来越重，林晨和林心雨也陆续出现异常。到了五月，家里把林海和三个孩子都送去住院。外面有人说是家族遗传，也有人怀疑王多丽死得蹊跷，传说林家步入了灾厄的命运。</p>
+        <p>那阵子，林一快毕业了，妈妈突然联系不上，只偶尔有妹妹打电话。冯萍说妈妈身体不好，住了几天院，有自己在不用太担心。她把王多丽的死讯告诉林一，又叮嘱他在外面多当心。如果觉得疲惫或精神恍惚就及时休息，千万别回来了，家里并不安全。</p>
+        <p>林一不免怀疑起来，因为长这么大他没有感觉精神有什么异常，他搜索新闻，发现媒体对这件事也大肆宣扬报道，称之为财富的诅咒，对于林海这种级别的富豪一家被精神类疾病困扰的新闻最适合当娱乐版面的头版头条了。</p>
+        <p>2026 年 6 月，林一办完毕业手续，立即回国探望妈妈和生父。他也想当面问清林家的事。毕竟明面上，他仍是林氏集团的长子。</p>
+        <p>但回国后，他并没有如愿见到自己的爸爸妈妈，在接他的车上他睡着了，醒来时他已经被束缚住了手脚，医生和护士站在他身边给他推入了药物，于是他又沉沉睡去...</p>
+        <p>不知道这样过了多久，他在一片黑暗中醒来，四肢冰冷且麻木，窗外的景色让他十分陌生，他不知道自己身上发生了什么事，但他发现自己的右手床垫下多了一把餐刀（冯萍知道很多内幕，是她假扮成护士来放的）。他用这把餐刀磨断了绳子，脑袋还是昏沉。从坐上接机的车到被送到这里，中间的事只剩几个断断续续的画面。他现在只想离开这里。</p>
+        <p><br></p>
+        <p><b>林一 坏结局一：遗传灾厄</b></p>
+        <p>林一没能逃过医生护士的搜捕，被抓回病房，继续过着被囚禁的日子。林心雨和林晨先后死在医院里。几周后，林一也死了。林海仍被关在院里，集团对外说他在静养。林画逃出了医院，外界几乎没有她的消息。</p>
+        <p>媒体争相报道这出悲剧。在镜头前，冯如泪如雨下，控诉命运不公，林博览就站在一旁，静静看着她。不久后，冯如也因器官衰竭死亡。直到死前，她都不知道林博览买通了她的医生，多年送给她的补品也有问题。</p>
+        <p>2035 年秋，二十八岁的冯萍已从实习生一步步做进管理层。公司对外宣传她是从基层做起来的年轻人，董事会也开始把她视为林博览的接班人。</p>
+        <p><br></p>
+        <p><b>林一 坏结局二：入虎穴，进肚子</b><b></b></p>
+        <p>回国当晚，林一找到了通讯室的钥匙和号码簿，联系上冯如和林博览。他没有查到家人在这家医院的下落，便信了表叔的话，以为接机后的记忆断片是自己生了病。冯如开车来接他。林一终于回到了熟悉的家，在家中的床上沉沉睡去，然后，再也没有醒来。</p>
+        <p><br></p>
+        <p><b>林一 真结局：恶意</b></p>
+        <p>经过几番挣扎，林一逐渐从昏沉和幻觉中清醒。他查到一切的幕后元凶，也在转送记录里找到了林海、林晨和林心雨。</p>
+        <p>林一从转送单上确认了医院地址。他和林画在 303 观察室发出一条求助帖，也尝试联系集团海外办公室。电话接通后，林一将手机递给身边的林画，让她亲口向母亲 Katty 求援。</p>
+        <p>王多丽的死由林博览策划，冯如知情并帮了他。林海早在手术前就因林博览安排的药物出现异常。等林一毕业将近，博览把林海和三个孩子关进医院，让冯萍劝说林一别再回国。冯如也曾和博览说好，只要林一留在国外，就让他过自己的日子。听说林一决定回来，她知道儿子迟早要追问父亲和弟妹的下落。林博览说开了，一旦林一查下去，这一切事情就会查到他们身上。冯如明知博览要做什么，还是答应了。</p>
+        <p>Katty 接到了女儿的密电，安排了救援，请他报警并叫救护车，自己留在电话那头和林一保持联系。当天夜里，林一逃出医院，林晨和神志仍不清醒的林海也被救出，送往别的医院。救援人员在院内确认了林心雨脑死亡。</p>
+        <p>在逃出生天之后，主角可以选择检举林博览/冯如或者与林博览对质，不论作何选择，回忆往日种种，心里都更多的是对他行为的不解。人总归是低估了贪婪的厉害。</p>
+        <p><br></p>
 
-        <h3>二、等人来接的那个晚上</h3>
-        <p>他在二楼走廊碰见妹妹。两人刚认亲不久，她叫「哥」还有些生疏。她说父亲走的那天也收拾好了行李，叔叔说要接他回家。几天后，她被带去旧住院楼做检查，隔着门听见父亲叫她的小名。陪她的人说是她听岔了。她记得父亲叫她第二声时，咳嗽了两下。</p>
-        <p>他回值班室看晚上的安排。名单上有他的名字、接送时间和去处。母亲说的接人时间没错，去处写的是「旧住院楼」。他拿走手机，把外套留在了床上。妹妹说自己知道一段通往旧楼的路，具体出口在哪儿，得去三楼看旧平面图。</p>
+        <h3>林博览线（幕后元凶视角）</h3>
+        <p>林一小时候怕打雷。冯如有一回出门，林博览替她守了半夜。孩子把手从被子里伸出来，攥住他的袖口，问他明天还来不来。他说来。第二天他开完会赶过去，林一已经在门边等了好一阵，手里拿着一块要分给他的糖。那时候林海在海外，打电话回来总先问国内的生意，挂断前才想起问一声孩子。博览一边替他答，一边觉得这孩子跟自己比跟他亲也很平常。毕竟按时来的人是自己。</p>
+        <p>冯如怀上冯萍时，问过林博览，孩子生下来要怎么跟人解释。他劝她留下，也答应负担母女的生活，但当着林海的面仍让孩子管他叫表叔。冯萍再大一点，问自己怎么跟哥哥姓得不一样。他说随妈妈姓有什么不好。过了许多年，他还记得她听完只顾低头给书包写名字，一个「萍」字写了三遍。</p>
+        <p>2024 年董事会散会后，林海跟他提起退休，说两人以后找个地方钓鱼。当天晚宴上，林海却又托他等林一回来，手把手教一阵，再把国内的事交过去。林一隔着桌子朝他举杯，叫了声「表叔」，说以后要多麻烦他。博览举杯和他碰了一下。回家翻公司旧档，他随手抽了几份出来，几乎每一页都有自己的签名。董事会那天留给他的那一栏，写的是交接负责人。</p>
+        <p>他本来盼着林一会在国外找到工作。这样，交接就能一拖再拖，冯萍也有时间在集团里站稳。可林海一直等着长子回来，还把另外三个孩子接到了京海。到 2026 年春，林海已时常失神，王多丽开始替他过问家里的事。她四月的手术是博览安排的，改期那通电话由冯如打。王多丽死后，博览又把林海和三个孩子送进医院。外面越传越像是林家的遗传病，他也越少接到过问他们去处的电话。</p>
+        <p>冯如肯帮忙，有一个条件。只要林一留在国外，就让他继续过自己的日子。博览答应过她，也让冯萍去劝哥哥。收到林一发来的航班信息时，他盯着落地时间看了很久。林一还说小时候那家面馆开着的话，想回来陪他吃一碗。他回了个「好」，随后确认了接机安排。送往医院的名单上，201 那一栏终于有了名字。</p>
+        <p>回国当晚，院里告诉他，201 的人不在床上。博览先问林一有没有打过电话。林一遇到麻烦时最先想到的总是他，这一次，只要他说是回来太累、进院休息两天，林一也可能信。冯如可以去接人，院里也还有人在找他。博览唯一算漏的是林一在楼梯口碰见了林画。他以为四个孩子各有各的家，哪怕认出彼此，也很难把自己的事交给对方。</p>
+        <p><strong>三个结局里的林博览</strong>　在「遗传灾厄」里，他站在冯如身后看她面对镜头。后来冯如也死了，冯萍在集团里一步步接近他留给她的位置。在「入虎穴，进肚子」里，他接到冯如的电话，听见林一已经乖乖上车，只问了一句有没有别人跟出来。在「恶意」里，他得知林画把电话打给了 Katty，院方此前隐去的病房号已经交到了外面的人手上。如果林一当面对质，最让他难以回答的，是林一问他还记不记得小时候那声「明天还来不来」。他记得那一天。</p>
 
-        <h3>三、302 档案室</h3>
-        <p>三楼停了电。他用手电在 302 找到旧平面图和几份转送记录。父亲和几个弟妹的名字先后出现在上面，联络人一栏反复出现同一个名字。叔叔一直替家里人接电话、带消息，也经手了他们每一次所谓的「离院」。他自己的名字排在最后，登记时间是回国后。</p>
-        <p>同一天的两份记录写着不同的话。父亲那份写「女儿拒绝探视」，妹妹那份写「父亲不愿见她」。叔叔替他们转达了两次。妹妹说那天她换好衣服，从晚饭前一直等到熄灯。</p>
-        <p>父亲年轻时出去打工，供弟弟念法律，出海做生意也把他带在身边，让他做公司法律顾问。主角刚回国时，叔叔提过父亲张罗认亲饭的事。他那时说：「你爸现在可好了，回来坐一桌，哪儿都是他的人。」当时叔叔说完还笑了。主角看着两张探视记录，想起父亲知道女儿「不肯来」以后，下一次探视还会不会等她。</p>
-        <p>旧图上，一条连廊从主楼通往旧住院楼，另一端能下到后院。妹妹记得父亲声音传来的那扇门。两人约好在连廊会合，趁值班的人还在 201 找他，往旧楼走。</p>
-
-        <h3>四、旧住院楼</h3>
-        <p>他们对着转送名单逐间确认。失踪的家人被分开留在旧楼，仍有一部分人在那里。父亲也在。他认出了女儿，问她那天怎么没来。妹妹说：「我来了。我在门外等你。」父亲从枕头底下摸出一张纸，上面记着几个孩子的名字和他最后听见他们声音的日期。他一直在等他们来。</p>
-        <p>他把父亲写下的日期拍进手机。妹妹把那张纸折好，放回父亲手里，说自己记住了。旧楼另一头有扇门通往后院，两人顺着旧图继续往前走。</p>
-
-        <h3>五、最后一道门</h3>
-        <p>到后院时，母亲打来了电话。她说自己已经到病房了，问他在哪儿。主角问：「爸那天，你也是这么跟他说的？」她说她跟他叔叔说好了，只要他待在国外，就轮不到他。主角刚喊了一声「妈」，她就打断了他。</p>
-        <blockquote><p>「天堂有路你不走。」</p></blockquote>
-        <p>父母离婚时他四岁。他跟着母亲和继父长大。父亲回国后，母亲常去给他打扫，回来总说他连自己都照顾不好。那时候谁都以为她在等父亲出一笔留学的钱。他也以为只要自己从国外回来，一家人总有一天能坐下来吃顿饭。</p>
-        <p>挂断电话，控制权回到玩家手里。他打开后院最后一道门，走到医院外。留学那天的录像再次出现。母亲还在朝他挥手：「过年也不用回来，我去看你。」开头曾经响过几秒的那首歌，这一次接着往下唱。</p>
+        <h3>冯萍线（林一的同母异父妹妹视角）</h3>
+        <p>冯萍小时候过生日，蛋糕上的名字是哥哥写的。有次别人问她爸爸是谁，她回家追问母亲，冯如让她把作业拿出来。林一等母亲走开，从厨房给她端来剩下的蛋糕，说下午那道数学题自己也不会，两个人一起看。后来她想起那天，已经不记得问话的人长什么样，只记得那块蛋糕让哥哥切得一边厚、一边薄。</p>
+        <p>2026 年春，她第一次去集团实习。表叔给她一封信，叫她回家再看。她原以为是工作上的叮嘱，拆开才看见那句「你始终是我的女儿」。第二天，她照旧在办公室喊他林总。她后来问母亲这件事。冯如许久才说，他确实是你爸，你哥还不知道。冯萍把信收回抽屉，接下来几周都没敢告诉林一。</p>
+        <p>王多丽死后，她听见母亲和林博览争执。她本来打算进去，听见「改期」两个字，脚停在门边。母亲说自己照他的话劝过王多丽，又问怎么还有人在查。等林博览开口，她按下手机录音。那段录音只留下了后半截。回去听时，她反复重放母亲提起哥哥的那句话。原来他们已经谈过，如果林一回来，该怎么办。</p>
+        <p>五月，母亲住了几天院，冯萍替她接家里的电话。林博览让她叮嘱哥哥留在国外，说家里现在乱，回来也是添事。她对林一说的是「千万别回来，家里不安全」。林一追问是哪个人让她害怕，她没敢在电话里说。六月，实习时她看见一份交接材料，哥哥的名字已经被填在 201。她打给林一，电话始终没接。再打给母亲，冯如只说博览会安排。</p>
+        <p>她穿着护士服走进 201 时，林一闭着眼睛，手腕被绑在床上。她喊了一声哥，他没醒。她把一把餐刀塞到右手边的床垫下面，又留下字条，让他去翻床尾的旧书。书里藏着那段录音和表叔给她的信。她原先还想把信拿回来。隔着一扇门，走廊里有人喊下一轮查房，她松开了手。临走前，她只来得及把书推得离床近一点。</p>
+        <p>她出院区后没走远，隔一阵就看一次手机，等林一用任何号码打来。她知道 201，知道父亲和母亲在骗他们，也知道还有几个人曾经被送进这家医院。那晚她能留给哥哥的东西，都在床边了。后来真正找到林晨和林海的房号、把电话打到院外的人，是在二楼碰面的林一和林画。</p>
+        <p><strong>三个结局里的冯萍</strong>　在「遗传灾厄」里，她知道自己帮过哥哥，也知道林博览是自己的父亲。她手上没有哥哥死在院里的记录。母亲去世后，她留在集团，一部分是因为她想知道当年究竟发生了什么，一部分也因为她想要那张椅子。2035 年董事会终于提起接班。散会后别人问她有没有什么想说的，她把笔搁下，只问能不能先看一眼过去几年的旧档。在「入虎穴，进肚子」里，她回家时看见哥哥的鞋已经在门边。母亲说他睡了，让她晚一点再敲门。她信了这句话。在「恶意」里，她收到哥哥脱险的消息。如果林一找到了信和录音，她愿意当面说清它们是什么、自己又做过什么。开口前，她先告诉哥哥，那晚她在床边喊过他。</p>
       </article>
     </section>
 
     <section id="flow" class="sheet" aria-labelledby="flow-heading">
       <h2 id="flow-heading">玩家流程</h2>
       <div id="flow-text" contenteditable="true" spellcheck="false" aria-label="玩家流程正文" tabindex="0">
-        <ol class="stages">
-          <li>
-            <h3>离开病房，试走正门</h3>
-            <p><strong>行动</strong>　从 201 醒来，拿床头电池，熟悉走路、开门和手电。下楼到 103 挂号室，尝试从正门离院。</p>
-            <p><strong>推进</strong>　正门不放行，工作人员让他联系家属。回二楼找电话。</p>
-          </li>
-          <li>
-            <h3>求助家属，等人来接</h3>
-            <p><strong>行动</strong>　在 202 值班室打给母亲，随后见到叔叔。送行录像可在这段回看，露出叔叔当年帮忙和结尾歌曲的开头。</p>
-            <p><strong>推进</strong>　两人都保证晚上有人来接。妹妹讲起父亲上一次被接走的经过，玩家可以回 202 核对自己的去处。</p>
-          </li>
-          <li>
-            <h3>发现接送终点，另找出路</h3>
-            <p><strong>行动</strong>　读到晚间接送单，发现自己的目的地是旧住院楼。和妹妹约定碰头，上三楼找旧平面图。</p>
-            <p><strong>推进</strong>　这趟接送就是父亲走过的路。玩家需要在来人前找到别的出口。接人时间用于剧情推进，实际是否加倒计时待定。</p>
-          </li>
-          <li>
-            <h3>找到连廊，核对转送记录</h3>
-            <p><strong>行动</strong>　开手电探索断电的三楼，在 302 找到旧图和转送名单，对照父亲与妹妹的探视记录。需要时可去 101 取备用电池。</p>
-            <p><strong>推进</strong>　平面图提供逃生路线。名单证实叔叔经手了历次转送，探视记录则让玩家发现他刻意让家人彼此误会。按图去连廊与妹妹会合。</p>
-          </li>
-          <li>
-            <h3>穿过旧楼，亲眼确认下落</h3>
-            <p><strong>行动</strong>　用名单确认房间，顺妹妹记得的声音找到父亲，拿到父亲写下的时间和名字。沿旧图找到通往后院的门。</p>
-            <p><strong>推进</strong>　玩家在自己逃跑的途中，查到了家人的真实去处。这里可以容纳是否带人同行的选择，具体分支待定。</p>
-          </li>
-          <li>
-            <h3>接到最后一通电话，走出医院</h3>
-            <p><strong>行动</strong>　在后院接到母亲的电话。通话结束后由玩家打开外门，走到院外。</p>
-            <p><strong>结尾</strong>　出门触发送行录像与歌曲。玩家已经知道当年那次送别对母亲意味着什么。</p>
-          </li>
+        <h3>主线｜网页调查</h3>
+        <p>玩家从 Windows 11 风格的电脑桌面进入 Edge，以一名论坛网友的身份调查。常驻网站为<strong>京海贴吧「京海街坊」、新闻网「京海晚报」、LinkedIn（领英）</strong>。院校官网、林氏集团官网、市立医院院区名录、企查查和警方求助页，由关键词或前一站的链接找到。Edge 搜索只显示各网站入口，帖子、个人档案和报道须进站后打开。每次找到能用的名字、地名、项目名称或日期，调查笔记会记下原出处，方便折返查证。</p>
+
+        <h4>一、京海贴吧｜失联的求救帖</h4>
+        <p>在「京海街坊」都市传说板找到「夜班白茶」发的普通新帖：「我是京海的林一，我被困在一处医院，请联系我的家人，来救救我！」玩家选择「私信楼主」，发消息询问门牌或病区。同一刻，护士已取回手机，林一也再次被控制。私信显示已读后，玩家返回原帖，页面只剩「该帖已被发帖人删除」。这次删帖由发送私信触发。</p>
+        <p>玩家从自己发出的私信找回「林一」「京海」，再点发帖人的头像进入公开主页。账号的旧帖仍在。一帖提到「松桥路」「住院部夜班」，另一条六月动态提到当晚接收过一个刚读完海外硕士、回到京海的年轻人。<strong>姓名与学历指向领英，路名与住院部只确定护士值班的位置，留到转运解谜再核对林一的去向。</strong></p>
+
+        <h4>二、领英 → 海外院校官网｜从留学项目找到林氏集团</h4>
+        <ol>
+          <li>在 Edge 搜「林一 京海」或「Lin Yi」，打开 LinkedIn 网站入口；在领英站内输入姓名，找到京海的 2026 届毕业生。对照护士的动态，核实他在 2024 年秋至 2026 年 6 月攻读海外硕士，毕业后计划返京海。</li>
+          <li>从教育经历抄下<strong>院校名、项目全名、2024 年入学</strong>。用院校名找到海外院校官网，再在官网的项目页按全名查对应届别。「合作伙伴与奖助」栏目列有林氏集团的赞助，集团全称或合作伙伴链接通往林氏集团官网。这一步先查到林一与集团的交集。</li>
         </ol>
+
+        <h4>三、林氏集团官网 → 新闻网与贴吧｜认出林一，追查家人的去向</h4>
+        <ol>
+          <li>集团官网「公司公告」一栏有两份文件。一份称创办人<strong>林海</strong>因健康原因暂停公开活动，另一份宣布法定代表人变更，由国内业务负责人<strong>林博览</strong>接管日常经营。记下两份公告的日期、署名和集团官网的公开联络入口。</li>
+          <li>在「京海晚报」站内搜「林海」，找到前妻<strong>冯如</strong>的旧报道、现任妻子<strong>王多丽</strong>四月手术身亡的消息，以及有姓名图注的旧家庭合影。用合影和领英资料把毕业生与图注里的林一对上，确认他是曾长期在国内生活、很少公开露面的长子。前妻报道给出冯如创办的<strong>公司全称</strong>，供下一步检索。</li>
+          <li>在贴吧搜「林家」或「家族诅咒」，看到有人把妻子身亡、子女陆续消失和林海休养串起来。回新闻网逐个搜索<strong>林晨、林心雨、林画</strong>，查公开简历、活动旧照、亲属报道及后续转院消息。新闻说他们分别被送往不同医院，唯独没有林一的去向。把报道里的医院和日期记下来，随后用转运回执核对。回执的第一列是纸面目的地，实际去向留给第七步查证。</li>
+          <li><strong>隐藏线｜林画的生母。</strong>公开合影的图注只写林画随王多丽出席。玩家从林画的公开活动履历找到早年的校友活动采访，站内打开完整旧稿，从林画本人谈及家庭的段落认出她的生母<strong>Katty</strong>。再用旧活动页留下的海外联络入口找 Katty 本人。这个联络点与集团官网反馈通道分开，旧稿在救援前始终可以回查。</li>
+        </ol>
+
+        <h4>四、新闻网 →《育儿经》→ 冯萍的私信｜换到冯如的育儿日记</h4>
+        <ol>
+          <li>在「京海晚报」搜「冯如」和她的公司全称。企业专访带出演出的节目名，顺着报道链接进入《育儿经》节目页。主持人先问她怎样养育林一，后来提到「那您女儿小时候呢？」字幕打出<strong>冯萍</strong>的名字。节目里冯如对外分享的育儿方式，也给日记里的内容留一个对照。</li>
+          <li>从节目关联资料找到冯萍的个人账号，发私信时带上自己保存的求救原话。冯萍认出是哥哥。她愿意帮忙，但怕母亲和集团发现她参与。她提出交易，玩家答应替她隐去身份、帮忙把哥哥的下落传给院外的人，她才通过私信发来母亲的<strong>育儿日记副本</strong>。确认林一的实际院区后，可以请她核对后来求援所需的床位。</li>
+          <li><strong>日记情景一。</strong>翻到林海离家后的几页，先见「等他回家」，再见语气逐渐变成怨恨。翻开夹页时突然弹出一张饱和的<strong>黄底红字诅咒符</strong>，符纸与旁注都指向她想诅咒林海。下一页才回到她记录孩子起居的琐事。</li>
+          <li><strong>日记情景二。</strong>夹页里露出一个穿碎花娃娃裙、齐刘海、眼睛很大的小女孩。眼睛只有黑色眼珠，看不见眼白。照片背面写着「如果她活下来，应该也这么大了」，是冯如用一张孩子的照片寄托对曾经打掉的胎儿的想象。冯萍在节目和私信里都有独立身份，日记两处的称呼也要分得出来。</li>
+          <li>玩家继续翻到一笔平常的记事：「今天博览说，公司的事他来处理。」把<strong>「博览」</strong>与集团官网公告的全名对上，再带着节目里的公司名去企查查。日记交代冯如的情绪和可疑行动。她参与送院的证据要等到文件和录音出现后才核实。</li>
+        </ol>
+
+        <h4>五、企查查 → 付款文件 → 日记密文｜把两人连起来</h4>
+        <ol>
+          <li>在 Edge 搜到企查查，站内分别查冯如创办的公司和林氏集团。用企业名称、负责人、历史任职与两家公司公开列出的合作项目核对人员关系，再从反复出现的项目名找到往年合作文件。</li>
+          <li>将企查查里的项目名称和日期带回集团官网往年项目附件，并和冯萍留存的付款单据互相核对。单据显示两家公司多年间存在实际资金往来，其中几笔与王多丽手术改期、林家人送院或转送的日期相邻。转运项目附件带有四份对外回执，分别列着林海、林晨、林心雨、林画的海外目的地邮编，同一批的编号依次为 01 至 04。把项目名发给冯萍，她补发编号 <strong>05</strong> 的回执副本，上面写着林一的名字和纸面目的地邮编。</li>
+          <li>把项目名发回给冯萍，她提醒玩家看日记里她做过记号的三处页脚。按「等他回家」那页、女孩照片背面和「博览」记事的顺序，找到 <code>nalob</code>、<code>evihcra</code>、<code>lacol</code>。她在第三处留下转写提示「每组倒过来读，照着 <code>_____-_______._____</code> 拼起来」。合成 <code>bolan-archive.local</code> 后，输入 Edge <strong>地址栏</strong>，直接打开林博览个人档案的只读副本。页面入口由冯萍留在日记里。</li>
+        </ol>
+
+        <h4>六、林博览个人档案｜核对指令，确定幕后主谋</h4>
+        <p><strong>档案情景三。</strong>打开页面先闪出黑底图片。中间是林海的遗照，外圈是花圈，上方一个大「祭」字，前面白蜡烛在画面中闪烁。玩家可查看原文件日期，回头对照集团官网的休养公告，发现林海仍在休养时，林博览已备好了灵堂。</p>
+        <p>冯萍给的是从林博览个人档案里留存的录音和文件副本。录音依次暴露他怎样控制冯如、安排王多丽的手术并授意把她的死按事故处理、买通佣人给林家人下药，以及怎样安排送院和隐去房号。每段录音各有一个可拿去复核的日期、人名或项目名，玩家据此在报告里并排放入相应的原始证据。</p>
+        <table class="flow-table">
+          <thead><tr><th scope="col">要核实的事</th><th scope="col">玩家怎样对证</th></tr></thead>
+          <tbody>
+            <tr><td>谁安排送院和隐匿</td><td>可信渠道取得的原始名册有林博览签字，转送单和原始交班页记录谁要求隐去房号。林一的接机回执记下实际落地时间 18:40，首次入院登记却在同日 17:10 就填了「现场核验本人同意」。把这两张单和录音里的指令交叉核对。</td></tr>
+            <tr><td>所谓的家族遗传</td><td>把录音提到的同一批补品与签收单、检验回执和交班页对批次、收件人与症状先后。再用签署的发放记录核实指令由谁发出，从几人的共同经历追到林博览。</td></tr>
+            <tr><td>王多丽之死及冯如的参与</td><td>用王多丽的改期消息和付款单找出日期与经手人，再把录音里具体的安排与调查方拿到的原始手术记录或经核实的证词互相印证。冯如协助改期、同意把林一送院的签字单独归档。</td></tr>
+            <tr><td>为什么要这么做</td><td>对照集团接班纪要和档案里写给冯萍的私信。林海原本打算培养林一接手国内业务，林博览则想留住权力，扶自己的女儿冯萍接班。</td></tr>
+          </tbody>
+        </table>
+        <p>报告最终要回答「谁下了指令、谁参与执行、哪几份材料能互相印证」。时间线从集团接班安排、王多丽之死和五月送院，接到六月林一发帖。日记、灵堂照片和论坛传言可以引导玩家提问，指控落在已互证的录音与原始记录上。</p>
+
+        <h4>七、五张转运回执 → 30 位号码｜找到林一的藏匿地点</h4>
+        <ol>
+          <li>打开前一步找到的五份回执。五张都写着同一批次，且「目的地邮编」都是<strong>六位数字</strong>。打开游戏电脑桌面的「地图」，也可以从 Edge 进入地图站点。输入完整地址可查邮编，输入六位邮编可查地址，地图会标出该地点。逐个查询五组邮编，五份回执都能在游戏地图上查到岬汀群岛的公开地址，林一的 05 回执表面上和前四份一样。查完后回到回执，另行打开内部校验入口。</li>
+          <li>回执底部附有「转运回执校验」入口。说明写着「按单据序号录入本批所有目的地邮编，连续输入」。玩家按 <strong>01 → 05</strong> 排好，把五组六位邮编拼成 <code>962418965307968152961784969623</code>。按新闻发布时间排序或只填最后一组，校验结果会提示回看批次与编号。</li>
+          <li>30 位号码通过校验后，页面在 05 行显示一张「原始联络点」附页。末组六位 <strong><code>969623</code></strong> 也被林氏集团用作本批最后一个联络点的内部地址码。附页把它对应到<strong>京海市立医院东院区住院部 · 松桥路 18 号</strong>，并标注该记录对应林一。</li>
+          <li>最后把附页和护士主页、医院公开名录放在一起。名录在松桥路上同时列有社区门诊和东院区住院部；护士的旧帖提到的是住院部。三处信息吻合后，调查笔记才记录「林一的藏匿地点已核实」，玩家可以携带附页去求援。</li>
+        </ol>
+        <table class="flow-table">
+          <thead><tr><th scope="col">回执序号</th><th scope="col">姓名</th><th scope="col">纸面目的地邮编</th><th scope="col">岬汀群岛医院及地址</th></tr></thead>
+          <tbody>
+            <tr><td>01</td><td>林海</td><td><code>962418</code></td><td>渡安中心医院 · 岬汀群岛渡安港船坞路 21 号</td></tr>
+            <tr><td>02</td><td>林晨</td><td><code>965307</code></td><td>白沙湾康复医院 · 岬汀群岛白沙湾潮生路 8 号</td></tr>
+            <tr><td>03</td><td>林心雨</td><td><code>968152</code></td><td>河埠联合医院 · 岬汀群岛河埠区石桥街 36 号</td></tr>
+            <tr><td>04</td><td>林画</td><td><code>961784</code></td><td>北岬综合医院 · 岬汀群岛北岬区雾塔路 17 号</td></tr>
+            <tr><td>05</td><td>林一</td><td><code>969623</code></td><td>东汐临港医院 · 岬汀群岛东汐港灯塔大道 62 号</td></tr>
+          </tbody>
+        </table>
+
+        <h4>八、选择求助对象与触发结局</h4>
+        <p>求助材料包括发帖内容与时间、已核实的身份、30 位回执号码和 05 行的实际院区。可以补上冯萍或可信渠道提供的床位。初次问询后可以继续调查；两种坏结局都由玩家确认发出具体下落触发。玩家在获得可信渠道的救援确认后，继续使用档案追查完整真相。</p>
+        <table class="flow-table">
+          <thead><tr><th scope="col">网页主线结局</th><th scope="col">玩家怎样触发</th><th scope="col">结果</th></tr></thead>
+          <tbody>
+            <tr><td>坏结局｜遗传灾厄</td><td>救援确认前，使用<strong>林氏集团官网</strong>的反馈电话或邮箱，并确认将林一的具体院区或床位交给集团。</td><td>林博览控制的反馈渠道先收到消息。集团回复「已转交家属」，院内随即转移林一，玩家再次失去他的消息。媒体继续沿用家族遗传的说法。</td></tr>
+            <tr><td>坏结局｜入虎穴，进肚子</td><td>救援确认前，通过《育儿经》人物资料或她的公司页面<strong>直接联系冯如</strong>，告诉她林一的具体下落，并同意由她去接。</td><td>冯如来电说已经在路上。她接走林一，之后玩家等不到他发来的平安消息。</td></tr>
+            <tr><td>好结局｜林一获救</td><td>核对身份并通过 30 位号码查到林一的实际院区后，把求助材料通过<strong>Katty 的独立联络点</strong>发给她，或带上冯萍私下给出的在院信息，亲自提交到<strong>京海警方的游戏内求助入口</strong>。收到可信救援确认后，玩家可以先结束调查。</td><td>院外接应确认林一脱险。结尾交代已核实的家人去向，调查报告继续标出存疑的记录。玩家仍可回查证据。</td></tr>
+            <tr><td>完整好结局｜恶意</td><td>完成可信求援，并集齐林博览的录音、对应原始记录和接班动机；在警方调查入口逐项核对送院、补品和王多丽手术三组指令与执行证据，再确认提交报告。</td><td>林一获救，调查方可以重建林博览主导、冯如参与的过程。救援资料补出其他家人的最终去向；查到 Katty 的玩家还会看到她确认林画身份及协助接应的回收。</td></tr>
+          </tbody>
+        </table>
+
+        <h3>DLC｜医院逃生</h3>
+        <p>2026 年 6 月，林一回国当晚在 201 病房醒来。玩家先想办法离开医院，途中会发现父亲和三个同父异母的弟妹也在这里住过。只要还没上冯如的车、被抓回病房或从后门离院，就能在开放的楼层之间折返，改走另一条路。</p>
+        <h3>一、201 病房醒来</h3>
+        <p>林一在病床上醒来。这段用第一人称。玩家查看右手边的床垫，拿起餐刀，再等来回移动的游标进入浅色目标区时点击或按键。三次判定成功后磨开束缚，失手可继续。随后切回走动视角，餐刀收入背包。腕带上的姓名让林一确认自己的身份，床头柜还有手电电池和当晚的巡查单。</p>
+        <p>椅背上压着一张折好的纸，写着「哥，别等人来接」。林一认得冯萍的字迹。她在他回国前也说过家里不安全。离开 201 后，玩家可以下楼看正门，也可以顺着走廊去 202。两条路都能陆续走到。</p>
+
+        <h3>二、在二楼遇见林画</h3>
+        <p>林一离开 201 后第一次经过二楼楼梯口时，遇见同样从病房出来的林画。这一幕发生在最终分岔之前。林画看过林海手机里的毕业照，又看见腕带上的名字，才敢叫住他。她报出自己的名字，给林一看写着五月日期的入院腕带，说那次一共送进来四个人。林晨和林心雨后来被带走，她再也没见到他们。</p>
+        <p>林一问外面还有谁能联系。林画说：「找海外办公室的 Katty。告诉她是我让你打的。她是我妈。」她让林一查到地址后去 303 观察室外碰头，自己去看林晨原来住的 301。地图上会记下两个房间。玩家即使先去打冯如的电话，仍然可以回来找林画。</p>
+
+        <h3>三、选求助对象，或继续找家人</h3>
+        <ul>
+          <li><strong>一楼 103 挂号室</strong>　正门锁着，工作人员说只等家属来接。柜台里有林一的交接袋。袋里的接机单由林博览确认，日期早于航班落地。夹页是一张家庭合照，林一认得父亲，这时才把照片中的林画和刚才见到的人对上。</li>
+          <li><strong>二楼 202 值班室</strong>　找到通讯室钥匙和号码簿。值班桌抽屉还可找到夜班护士的交班便笺。她把手机留在 303 推车上，同事在便笺上记下她的生日是 7 月 14 日。通讯室设在 202 内侧。玩家可以用座机打给冯如，也可以记下集团海外办公室的号码。冯如听见「我想回家」，便说车快到了。她没问林一在哪家医院。通话后挂号室可以办理接人，院内探索照常开放。</li>
+          <li><strong>二楼 203 处置室</strong>　交接表把林一登记为「本人同意」，时间却比航班落地还早。看过接机单的玩家可以在笔记里把两页对上，确认表叔说的自愿住院不成立。旁边还有冯如签过的接送确认，日期是林一返国前一天。</li>
+          <li><strong>一楼 101 检查室</strong>　找到地下室钥匙和维修交接单。钥匙打开一楼楼梯口的地下室铁门，交接单指出 B03 存有照明备件。这里也能补一节手电电池。</li>
+          <li><strong>地下室 B01、B02、B03</strong>　B03 有后勤门钥匙和应急照明备件。把备件送去 B01 配电室，可恢复三楼照明，也可以用手电直接上楼查档。B02 洗衣房能找到后勤动线图，求援后用 B03 的钥匙打开外门。</li>
+        </ul>
+        <p>冯如的车到了，会在一楼等玩家。上车前能问她林海在哪儿。她只说：「你表叔会照顾他。」这里给出「上车」和「回去找他们」两个明确选项。走到车旁或打过电话都不会替玩家做决定。密电成功后，冯如离开正门，院内救援成为当前目标。</p>
+
+        <h3>四、上三楼，确认谁还在院里</h3>
+        <ul>
+          <li><strong>301 旧病房</strong>　林晨还活着，意识时清时糊。他能认出林画。林一问起父亲时，他说父亲在观察室。林心雨当晚也曾被转来，后来病情突然恶化，被带到另一间病室。这段对话既让玩家找到人，也给 302 的转送记录提供核对对象。</li>
+          <li><strong>302 档案室</strong>　按姓名查看五月四人的入院记录和当晚的转送单。转送单标明医院地址、林晨和林海的现用房号、林心雨最后的去向。林博览在四份入院记录上都是指定联系人。五月档案附有林博览签字的送院安排，六月转送单则悄悄沿用了同一位联系人。把这组记录和 103 接机单对照，才能确认表叔从五月起就安排了几人的入院。</li>
+          <li><strong>303 观察室</strong>　林一隔门见到神志不清的林海。一名值班护士保留了有缺页的正式交班记录和被删去的原页。原页记着林海在住院前就出现异常，以及家属要求将三人的病房对外保密。林画到这里会合。林一可以查看护士留在推车上的手机，先在论坛发帖。拿到 302 的转送单后，还可以用它联系海外办公室。</li>
+        </ul>
+        <p>二楼遇见林画后，第一次离开二楼走廊时，巡查开始找 201 的人。下楼找正门和直接上三楼的玩家都会先经过碰面的楼梯口。脚步、对讲机和走廊灯的变化会提前提示。玩家可以退进房间等人走开，或趁巡查走过后折返楼梯。被发现会开始追逐，成功甩开就能继续探索。密电前被巡查抓住并押回 201，触发「遗传灾厄」。密电成功后保存检查点，之后被截住可从电话结束处重试。读档和记笔记时暂停理智与手电消耗，三楼的关键线索也可在应急灯下查到。</p>
+
+        <h3>五、发帖求援，走后勤出口</h3>
+        <p>在 303 选择「查看护士留下的手机」。根据 202 的交班便笺，用月日 0714 解锁。手机上的「京海街坊」已经登录护士的账号「夜班白茶」。林一从这个账号发布求助帖：「我是京海的林一，我被困在一处医院，请联系我的家人，来救救我！」发帖后可以打开主线论坛查看这条帖子。</p>
+        <p>拿到当夜转送单后，再从同一部手机选择「给 Katty 打电话」，确认报上医院地址和病房号。林一把手机交给身边的林画。她说自己和林一都在院内，林海和林晨需要人来接。Katty 听女儿说完，联络京海的人报警并带救护人员过来，双方约在 B02 外的后勤出口会合。打通这通电话才会开启院内路线的接应。玩家可以直接下楼，也可以在离院前往返各层补查。</p>
+        <p>如果玩家还没去过地下室，先到 101 拿铁门钥匙，再下楼去 B03 取后勤门钥匙。到 B02 外门后，让玩家确认「出去接应救援」或「先回去查证」。选前者，林一和林画从后勤门出去，林一把病房号交给接应人员。林晨和林海被救出，林心雨未能获救。对外求援一旦发出，三人的结果按真结局处理。林画当晚一直在京海，她给 Katty 的电话就是密电。离院前找到的材料会带进结尾，检举或对质时都可以用。</p>
+
+        <h3>幻觉房间里的记忆碎片</h3>
+        <p>理智低于 20 时，走廊里会出现现实地图上没有的门。进入幻觉房间后可以拾取记忆碎片。一楼是冯如，二楼是冯萍，三楼是林博览，地下室是林海。每片首次拾取时，会把过低的理智回稳到 18，玩家还能继续看到幻觉。收集后打开文档栏的「林一的记忆」，即可重读当时发生的事，以及林一是怎样理解他们的。</p>
+        <p>林一记得冯如会留灯等他，记得冯萍小时候过生日，记得林博览答应过的事，也记得父亲电话那头的碗筷声。在他的印象里，林晨、林心雨和林画都是王多丽的孩子。林画亲口说出自己的生母后，玩家仍然可以在记忆里看到林一当时的误会。医院的文档和调查笔记负责核实真相。</p>
+
+        <h3>线索怎样拼成完整真相</h3>
+        <p>笔记按疑问归档。记下一份孤立的资料时，只显示它能说明的事实。拿到互相印证的两份材料后，才出现对应的推断。以下几条都能在离院前查齐，电话接通后仍能回头补查。</p>
+        <table class="flow-table">
+          <thead>
+            <tr><th scope="col">玩家要弄清的事</th><th scope="col">能对上的证据</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>林一为什么会在 201</td><td>103 的接机交接单和 203 的「本人同意」记录。前者有林博览确认，后者的登记早于航班落地。</td></tr>
+            <tr><td>所谓的家族遗传</td><td>102 药房有一份未归档的检验回执，显示三人收到的同一批补品里发现了同一种外来成分。回执旁附有签收单。对照 303 被抽走的原始记录和林晨的证词，能确认异常在收到补品以后相继出现。林博览的签收单把这批补品和他连起来，另有冯如所用补品的留样也列在回执里，让玩家发现他连合谋的冯如也瞒着。</td></tr>
+            <tr><td>王多丽的手术与冯如的选择</td><td>冯萍留刀时把取件提示夹在 201 腕带登记页里，玩家可循线找到她留下的录音和信。林画在 303 核对王多丽四月发给她的改期通知。录音里，冯如说自己照着林博览的交代说服王多丽改期，追问他为什么答应那场手术出事后只会按事故处理。林博览承认那场手术是他安排的，还反问她当初为什么肯帮忙。手术通知核实旧案的时间，203 的接送确认则证明冯如还参与了林一这次入院。</td></tr>
+            <tr><td>林博览为什么做到这一步</td><td>接通密电后，Katty 可以从海外办公室发来 2024 年董事会的接班讨论纪要，玩家可在 303 借来的手机上查看回传材料。另有林博览托人交给冯萍的私信，冯萍把它和录音放在一起。纪要写着等林一毕业后接手，信里承认冯萍是他的女儿，也要她留下来接自己的班。</td></tr>
+            <tr><td>两个妹妹各做了什么</td><td>201 的字条与录音交代冯萍为什么先劝哥哥别回来，后来又偷偷留下餐刀。林画的腕带、五月入院记录和她亲手拨出的密电，交代她从住院到求援的经过。Katty 在通话中叫她的小名，接上林画在二楼说过的身世。</td></tr>
+          </tbody>
+        </table>
+        <p>找到其中一份材料后，笔记会提示另一份材料所在的房间或该去问的人。所有结论都查清后，离院时的笔记会按时间重排，从 2024 年的交班决定串到林一回国当夜。玩家在「恶意」的检举或对质段可以按这份笔记逐项追问。找到医院地址和房号后就能打电话安排接应。未查清的部分仍留在笔记里，让玩家知道自己还缺哪一段。</p>
+
+        <h3>三个结局怎么进</h3>
+        <p>触发结局后播放 CG，可跳过，也可以在结局页重播。两条坏结局都演到 2035 年冯萍接班，分别回收林一被押回医院和被母亲接走的旧档。「恶意」先交代密电与救援，查齐五组证据时，CG 还会交代旧案查清后的判决。</p>
+        <table class="flow-table">
+          <thead>
+            <tr><th scope="col">结局</th><th scope="col">触发与回收</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>遗传灾厄</td><td>密电前在搜捕中被押回 201。林画后来独自逃出，没有拿到其他人的病房号。她托人到医院打听时，博览已把几人转到对外封闭的病区，院方只说家属已经接走。随后接回媒体采访和 2035 年冯萍进入管理层的尾声。</td></tr>
+            <tr><td>入虎穴，进肚子</td><td>用通讯室联系冯如后，在 103 明确选择上车。院区探索到此结束，接回林一回家后从此没有醒来的结局。</td></tr>
+            <tr><td>恶意</td><td>和林画完成密电，把地址和房号交给 Katty，再从 B02 出去会合。结束后可把现有证据交给调查人员，或选择与林博览对质。查齐五组证据时，同一次逃院就能揭开夺权、王多丽之死、冯如的参与和假诊断，核实两个妹妹各自做过的事。证据不全时仍能获救，结尾只交代查实的部分。</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
     <section id="notes" class="sheet" aria-labelledby="notes-heading">
-      <h2 id="notes-heading">待定事项</h2>
-      <div id="notes-text" class="notes" contenteditable="true" spellcheck="false" aria-label="待定事项正文" tabindex="0">
+      <h2 id="notes-heading">人物关系图</h2>
+      <p class="relationship-hint" id="relationship-help">点击头像查看及编辑人物介绍。含剧情剧透。窄屏可横向滑动。</p>
+      <div class="relationship-scroll" role="region" aria-label="林家人物关系" aria-describedby="relationship-help" tabindex="0">
+        <div class="relationship-map">
+          <canvas class="relationship-lines" id="relationship-lines" width="1600" height="1152" aria-hidden="true"></canvas>
+          <span class="relationship-tag" style="--x:36%;--y:5.55rem" data-link="bolan hai">表兄弟</span>
+          <span class="relationship-tag secret" style="--x:16%;--y:11.35rem" data-link="bolan ru">共谋</span>
+          <span class="relationship-tag" style="--x:36%;--y:11.4rem" data-link="ru hai">前夫妻</span>
+          <span class="relationship-tag" style="--x:66.5%;--y:6.8rem" data-link="hai rose">夫妻</span>
+          <span class="relationship-tag secret" style="--x:79%;--y:11.4rem" data-link="hai katty">秘密情人</span>
+          <span class="relationship-tag secret" style="--x:7%;--y:19rem" data-link="bolan ping">生父</span>
+          <span class="relationship-tag" style="--x:21%;--y:22rem" data-link="ru ping">母女</span>
+          <span class="relationship-tag" style="--x:34.5%;--y:16.5rem" data-link="ru yi">母子</span>
+          <span class="relationship-tag" style="--x:50%;--y:12.95rem" data-link="hai yi">父子</span>
+          <span class="relationship-tag" style="--x:65%;--y:16.45rem" data-link="hai chen xinyu hua">林海在海外的三个孩子</span>
+          <span class="relationship-tag secret" style="--x:88%;--y:22rem" data-link="katty hua">生母</span>
+          <span class="relationship-tag" style="--x:30%;--y:24rem" data-link="ping yi">同母异父</span>
+          <button type="button" class="relationship-node" style="--x:17%;--y:6rem" data-profile="bolan" data-tone="plum" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/lin-bolan.webp" alt=""></span></span><strong>林博览</strong></button>
+          <button type="button" class="relationship-node" style="--x:23%;--y:16rem" data-profile="ru" data-tone="plum" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/feng-ru.webp" alt=""></span></span><strong>冯如</strong></button>
+          <button type="button" class="relationship-node" style="--x:55%;--y:7.4rem" data-profile="hai" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/lin-hai.webp" alt=""></span></span><strong>林海</strong></button>
+          <button type="button" class="relationship-node" style="--x:78%;--y:6.5rem" data-profile="rose" data-tone="teal" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/wang-duoli-v2.webp" alt=""></span></span><strong>王多丽</strong></button>
+          <button type="button" class="relationship-node" style="--x:91%;--y:17rem" data-profile="katty" data-tone="teal" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/katty.webp" alt=""></span></span><strong>Katty</strong></button>
+          <button type="button" class="relationship-node" style="--x:14%;--y:28rem" data-profile="ping" data-tone="plum" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/feng-ping.webp" alt=""></span></span><strong>冯萍</strong></button>
+          <button type="button" class="relationship-node" style="--x:47%;--y:18rem" data-profile="yi" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/lin-yi.webp" alt=""></span></span><strong>林一</strong></button>
+          <button type="button" class="relationship-node" style="--x:48%;--y:30rem" data-profile="chen" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/lin-chen.webp" alt=""></span></span><strong>林晨</strong></button>
+          <button type="button" class="relationship-node" style="--x:63%;--y:31rem" data-profile="xinyu" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/lin-xinyu.webp" alt=""></span></span><strong>林心雨</strong></button>
+          <button type="button" class="relationship-node" style="--x:78%;--y:25.4rem" data-profile="hua" data-tone="teal" aria-haspopup="dialog"><span class="person-avatar" aria-hidden="true"><span class="person-avatar-crop"><img src="dist/assets/portraits/lin-hua.webp" alt=""></span></span><strong>林画</strong></button>
+        </div>
+      </div>
+      <ul class="relationship-legend" aria-label="图例"><li>公开亲属关系</li><li class="secret">隐秘血缘与关系</li></ul>
+      <details class="notes-original">
+        <summary>原设定与时间线</summary>
+        <div id="notes-text" class="notes" contenteditable="true" spellcheck="false" aria-label="设定正文" tabindex="0">
         <ul>
-          <li><strong>场景接入</strong>　201 病房、202 值班室、101 检查室、103 挂号室和 302 档案室沿用现有地图。正门离院点、电话、名单和旧图的交互，以及连廊、旧住院楼和后院出口，都按剧情草案拟新增。</li>
-          <li><strong>家庭关系</strong>　保留原配、继父、女秘书和富商晚年伴侣的背景。确认海外出生的孩子和后两段关系中的孩子是否重合，再逐个定姓名、亲缘和最后下落。遗产先作为可疑动机，叔叔和母亲各自从这件事里要什么，在后半段逐步揭开。</li>
-          <li><strong>终段线索</strong>　母亲的电话揭开她参与接送安排和送儿子出国的用意。她和叔叔有私情是原设定，具体让玩家在哪段对话或物件里证实，仍待定。</li>
-          <li><strong>离院与歌曲</strong>　确定谁能跟主角离开、留下的人如何交代，以及是否做分支结局。等歌曲确定后，再选开头露出的片段和结尾进入的时间点。</li>
+          <li><strong>林博览</strong>　林海的表弟、林一的表叔，掌管林氏集团的国内业务，也是幕后元凶。他照顾冯如母子多年，在林一心里比父亲还亲近。他与冯如暗地育有冯萍，并把冯萍纳入夺权计划。</li>
+          <li><strong>林海与林一</strong>　林海白手起家创办林氏集团。林一是他与原配冯如的儿子，四岁时父母离婚。林海回国后送林一出国留学，打算培养他接班。</li>
+          <li><strong>冯如与冯萍</strong>　冯如是林海的原配，也是林一和冯萍的母亲。冯萍与林一一起长大，两人是同母异父的兄妹。林一原先不知道冯萍的生父是林博览。</li>
+          <li><strong>王多丽（Rose）</strong>　林海对外公开的现任妻子。她在一次小手术中死亡，对外说法是医疗事故。林一原以为林晨、林心雨和林画都是她所生。</li>
+          <li><strong>林晨、林心雨、林画</strong>　林一在海外出生的三个同父异母的弟妹。三人在林一出国留学之后，才随王多丽搬到京海。2026 年 5 月四人一同入院。6 月林一入院后，与林画在院内第一次见面。Katty 是林画的生母，真结局里林画在京海院内向她求援。</li>
+          <li><strong>Katty</strong>　林氏集团海外业务负责人、林海暗地里的情人，也是林画的生母。真结局由她从海外联络京海本地的人报警和接应。</li>
+          <li><strong>人物年龄</strong>　林一生于 2001 年 3 月，2026 年 6 月返国时 25 岁。冯萍生于 2007 年 5 月，开场时 19 岁。林晨、林心雨、林画分别生于 2006、2007、2008 年春，开场时分别为 20、19、18 岁。</li>
+          <li><strong>故事时间</strong>　2005 年秋父母离婚。林一于 2019 至 2023 年在国内读本科，2024 年秋出国读两年硕士。冯萍于 2025 年秋入学、2026 年春进入集团实习。王多丽于 2026 年 4 月死亡，5 月林海、林晨、林心雨、林画入院。6 月林一毕业返国并入院，在院内遇见林画，三个结局从当晚分岔。「遗传灾厄」的集团尾声发生于 2035 年下半年。</li>
         </ul>
       </div>
+      </details>
+      <dialog id="character-dialog" class="character-dialog" aria-labelledby="character-title">
+        <header>
+          <h2 id="character-title">人物介绍</h2>
+          <form method="dialog"><button type="submit" autofocus>关闭</button></form>
+        </header>
+        <img class="character-portrait" id="character-portrait" alt="" hidden>
+        <article class="character-profile" hidden id="profile-bolan" contenteditable="true" spellcheck="false" aria-label="林博览的人物介绍" tabindex="0">
+          <p><strong>林海的表弟，林一的表叔，冯萍的生父。</strong> 年轻时和林海一起长大，后来掌管林氏集团的国内业务。林一小时候，他常照顾冯如母子，林一甚至觉得他比父亲更亲近。</p>
+          <p>他是幕后元凶。林海打算让林一接班后，他为了留住国内业务、让冯萍接自己的班，策划了王多丽的手术和林家人的入院安排。冯如知情并帮了他。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-ru" contenteditable="true" spellcheck="false" aria-label="冯如的人物介绍" tabindex="0">
+          <p><strong>林海的前妻，林一和冯萍的母亲。</strong> 2005 年秋与林海离婚。离婚后她愈发严苛地管束林一，在林博览的帮助下接受过治疗，之后与他秘密生下冯萍。</p>
+          <p>她协助林博览让王多丽改期，并曾要求他放过留在国外的林一。林一执意回国后，她明知林博览会把儿子送进医院，还是答应了。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-hai" contenteditable="true" spellcheck="false" aria-label="林海的人物介绍" tabindex="0">
+          <p><strong>林氏集团创办人，林一、林晨、林心雨和林画的父亲。</strong> 他与冯如离婚后在海外组建家庭，公开的妻子是王多丽。林画的生母是他暗地里的情人 Katty。</p>
+          <p>2024 年决定退居二线，安排林一留学归来后接手国内业务。2025 年底起陆续出现异常，2026 年 5 月与三个孩子一起被送进医院。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-rose" contenteditable="true" spellcheck="false" aria-label="王多丽的人物介绍" tabindex="0">
+          <p><strong>王多丽（Rose），林海公开的妻子。</strong> 林晨、林心雨和林画随她搬到京海。林一一直以为三个弟妹都是她生的，直到林画亲口告诉他，自己的生母是 Katty。</p>
+          <p>2026 年 4 月在一次小手术中死亡，对外说法是医疗事故。手术改期前，她曾把消息发给林画。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-katty" contenteditable="true" spellcheck="false" aria-label="Katty 的人物介绍" tabindex="0">
+          <p><strong>林氏集团海外业务负责人，林画的生母。</strong> 她与林海有一段秘密关系。2024 年林海退居二线时，把海外业务交给了她。</p>
+          <p>真结局里，她接到林一和林画从院内打来的电话，从海外联络京海的人报警、叫救护车，并安排后勤门接应。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-ping" contenteditable="true" spellcheck="false" aria-label="冯萍的人物介绍" tabindex="0">
+          <p><strong>19 岁，林一的同母异父妹妹。</strong> 她与林一一起长大，2026 年春进林氏集团实习，从林博览给她的信里得知他是自己的生父。林一原以为她的父亲是母亲在外面认识的人。</p>
+          <p>她劝林一别回国。林一入院后，她假扮护士，在 201 床垫下留了餐刀，把录音和信藏进床尾的旧书。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-yi" contenteditable="true" spellcheck="false" aria-label="林一的人物介绍" tabindex="0">
+          <p><strong>25 岁，林海与冯如的儿子，也是游戏主角。</strong> 父母离婚后，他和母亲生活，与妹妹冯萍一起长大，把常来照顾他的林博览视为至亲。</p>
+          <p>2026 年 6 月硕士毕业回国，上了接机车后失去意识，在 201 病房醒来。他起初只想逃出去，在院内遇到林画后，开始追查林家人被送进医院的原因。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-chen" contenteditable="true" spellcheck="false" aria-label="林晨的人物介绍" tabindex="0">
+          <p><strong>20 岁，林海的儿子，林一的同父异母弟弟。</strong> 他随王多丽回京海，2026 年 5 月和父亲、林心雨、林画一起入院。</p>
+          <p>林一在 301 找到他时，他的意识时清时糊，还能认出林画，并说出父亲和林心雨曾被转往哪里。真结局中，他被救出医院。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-xinyu" contenteditable="true" spellcheck="false" aria-label="林心雨的人物介绍" tabindex="0">
+          <p><strong>19 岁，林海的女儿，林一的同父异母妹妹。</strong> 她随王多丽回京海，2026 年 5 月与父亲、林晨和林画一起入院。</p>
+          <p>她病情突然恶化，后来被转往另一间病室。林一可以通过林晨的证词和转送单查到她最后的去向。真结局中，救援人员在院内确认她脑死亡。</p>
+        </article>
+        <article class="character-profile" hidden id="profile-hua" contenteditable="true" spellcheck="false" aria-label="林画的人物介绍" tabindex="0">
+          <p><strong>18 岁，林海与 Katty 的女儿，林一的同父异母妹妹。</strong> 她随王多丽回京海，2026 年 5 月入院。她在二楼楼梯口凭毕业照和腕带认出林一，两人第一次见面。</p>
+          <p>她让林一去查房号，再到 303 与她会合。真结局中，她在电话里向母亲确认自己和哥哥还在医院，让院外救援得以展开。</p>
+        </article>
+      </dialog>
     </section>
   </main>
 
   <script>
+    const relationshipMap = document.querySelector('.relationship-map');
+    const relationshipCanvas = document.querySelector('#relationship-lines');
+    const relationshipInk = relationshipCanvas.getContext('2d');
+    const relationshipNodes = [...relationshipMap.querySelectorAll('[data-profile]')];
+    const relationshipTags = [...relationshipMap.querySelectorAll('[data-link]')];
+    const toCanvas = (x, y) => [x / 100 * relationshipCanvas.width, y / 36 * relationshipCanvas.height];
+    const relationships = [
+      { people: ['bolan', 'hai'], path: [[17, 6], [29, 3.6], [43, 5.9], [55, 7.4]] },
+      { people: ['bolan', 'ru'], secret: true, path: [[17, 6], [10, 11], [19, 14], [23, 16]] },
+      { people: ['ru', 'hai'], path: [[23, 16], [29, 11], [42, 10.4], [55, 7.4]] },
+      { people: ['hai', 'rose'], path: [[55, 7.4], [63, 6.6], [71, 6.4], [78, 6.5]] },
+      { people: ['hai', 'katty'], secret: true, path: [[55, 7.4], [64, 11.9], [84, 10], [91, 17]] },
+      { people: ['bolan', 'ping'], secret: true, path: [[17, 6], [1, 13], [2, 24], [14, 28]] },
+      { people: ['ru', 'ping'], path: [[23, 16], [24, 21], [20, 25], [14, 28]] },
+      { people: ['ru', 'yi'], path: [[23, 16], [30, 15.4], [38, 16.4], [47, 18]] },
+      { people: ['hai', 'yi'], path: [[55, 7.4], [52, 10.8], [49.7, 14.8], [47, 18]] },
+      { people: ['hai', 'chen', 'xinyu', 'hua'], path: [[55, 7.4], [59, 11], [66, 14], [66, 20.7]] },
+      { people: ['hai', 'chen', 'xinyu', 'hua'], path: [[66, 20.7], [60, 22], [52, 25], [48, 30]] },
+      { people: ['hai', 'chen', 'xinyu', 'hua'], path: [[66, 20.7], [66, 24], [65, 28], [63, 31]] },
+      { people: ['hai', 'chen', 'xinyu', 'hua'], path: [[66, 20.7], [73, 20.5], [75, 23], [78, 25.4]] },
+      { people: ['katty', 'hua'], secret: true, path: [[91, 17], [93, 22], [86, 24], [78, 25.4]] },
+      { people: ['ping', 'yi'], path: [[14, 28], [25, 27], [38, 23.1], [47, 18]] },
+    ];
+    function paintStarfield() {
+      let seed = 841;
+      function nextStarValue() {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      }
+      for (let index = 0; index < 245; index++) {
+        const x = nextStarValue() * relationshipCanvas.width;
+        const y = nextStarValue() * relationshipCanvas.height;
+        const light = nextStarValue();
+        relationshipInk.fillStyle = `rgba(199, 217, 255, ${.18 + light * .62})`;
+        relationshipInk.beginPath();
+        relationshipInk.arc(x, y, .5 + light * 1.45, 0, Math.PI * 2);
+        relationshipInk.fill();
+      }
+      for (const [x, y] of [[12, 3.5], [32, 29], [9, 24], [43, 8], [71, 3.5], [84, 31], [96, 12], [55, 25]]) {
+        const [left, top] = toCanvas(x, y);
+        relationshipInk.fillStyle = '#b4d4ff90';
+        relationshipInk.fillRect(left - 7, top - .5, 14, 1);
+        relationshipInk.fillRect(left - .5, top - 9, 1, 18);
+        relationshipInk.fillStyle = '#f8e8c0';
+        relationshipInk.fillRect(left - 1.4, top - 1.4, 2.8, 2.8);
+      }
+    }
+    function renderRelationships(focused) {
+      relationshipInk.clearRect(0, 0, relationshipCanvas.width, relationshipCanvas.height);
+      paintStarfield();
+      const related = new Set([focused]);
+      relationshipInk.save();
+      for (const { people, path, secret } of relationships) {
+        const highlighted = focused && people.includes(focused);
+        if (highlighted) people.forEach(person => related.add(person));
+        relationshipInk.beginPath();
+        const [start, ...curve] = path.map(([x, y]) => toCanvas(x, y));
+        relationshipInk.moveTo(...start);
+        relationshipInk.bezierCurveTo(...curve.flat());
+        relationshipInk.strokeStyle = secret ? '#eda8dc' : '#a9d0ff';
+        relationshipInk.globalAlpha = highlighted ? .98 : focused ? .19 : .7;
+        relationshipInk.lineWidth = highlighted ? 4 : 2.6;
+        relationshipInk.setLineDash(secret ? [10, 8] : []);
+        relationshipInk.shadowColor = relationshipInk.strokeStyle;
+        relationshipInk.shadowBlur = highlighted ? 15 : 5;
+        relationshipInk.stroke();
+      }
+      relationshipInk.restore();
+      relationshipNodes.forEach(node => node.classList.toggle('is-dimmed', Boolean(focused) && !related.has(node.dataset.profile)));
+      relationshipTags.forEach(tag => tag.classList.toggle('is-dimmed', Boolean(focused) && !tag.dataset.link.split(' ').includes(focused)));
+    }
+    renderRelationships();
+    relationshipNodes.forEach(node => {
+      node.addEventListener('pointerenter', () => renderRelationships(node.dataset.profile));
+      node.addEventListener('pointerleave', () => renderRelationships(node.matches(':focus-visible') ? node.dataset.profile : undefined));
+      node.addEventListener('focus', () => renderRelationships(node.dataset.profile));
+      node.addEventListener('blur', () => renderRelationships());
+    });
+
+    const characterDialog = document.querySelector('#character-dialog');
+    const characterTitle = document.querySelector('#character-title');
+    const characterPortrait = document.querySelector('#character-portrait');
+    let activeProfile;
+    relationshipMap.addEventListener('click', (event) => {
+      const node = event.target.closest('[data-profile]');
+      if (!node || characterDialog.open) return;
+      if (activeProfile) activeProfile.hidden = true;
+      activeProfile = document.getElementById('profile-' + node.dataset.profile);
+      characterTitle.textContent = node.querySelector('strong').textContent;
+      characterPortrait.src = node.querySelector('img').getAttribute('src');
+      characterPortrait.alt = characterTitle.textContent;
+      characterPortrait.hidden = false;
+      activeProfile.hidden = false;
+      characterDialog.showModal();
+    });
+    characterDialog.addEventListener('close', () => {
+      if (characterDialog.open) return;
+      if (activeProfile) activeProfile.hidden = true;
+      characterPortrait.hidden = true;
+      characterPortrait.removeAttribute('src');
+      activeProfile = undefined;
+    });
+
     const editors = [...document.querySelectorAll('[contenteditable]')];
     const status = document.querySelector('#status');
+    const saveHint = status.textContent;
     const initialText = editors.map(editor => editor.innerHTML);
     const draftKey = 'escape-hospital-manuscript:' + location.pathname;
 
     try {
       const draft = JSON.parse(localStorage.getItem(draftKey));
-      if (Array.isArray(draft?.original) && draft.original.length === editors.length &&
-          draft.original.every((html, index) => html === initialText[index]) &&
-          Array.isArray(draft.edits) && draft.edits.length === editors.length &&
-          draft.edits.every(html => typeof html === 'string')) {
-        editors.forEach((editor, index) => { editor.innerHTML = draft.edits[index]; });
-        status.textContent = '已恢复本浏览器里的草稿。';
+      if (Array.isArray(draft?.original) && Array.isArray(draft.edits)) {
+        let restored = false;
+        editors.forEach((editor, index) => {
+          if (draft.original[index] !== initialText[index] || typeof draft.edits[index] !== 'string') return;
+          editor.innerHTML = draft.edits[index];
+          restored ||= draft.edits[index] !== initialText[index];
+        });
+        if (restored) status.textContent = '已恢复本浏览器里的草稿。';
       }
     } catch {
       // Downloads still work when local storage is unavailable.
@@ -211,9 +632,17 @@
       }
     });
 
-    document.querySelector('#download').addEventListener('click', () => {
+    function downloadHtml() {
       const copy = document.documentElement.cloneNode(true);
-      copy.querySelector('#status').textContent = '点击正文即可编辑。用「下载 HTML」保存文件。';
+      copy.querySelector('#status').textContent = saveHint;
+      copy.querySelector('#character-dialog').removeAttribute('open');
+      copy.querySelector('#character-title').textContent = '人物介绍';
+      const savedPortrait = copy.querySelector('#character-portrait');
+      savedPortrait.hidden = true;
+      savedPortrait.removeAttribute('src');
+      savedPortrait.alt = '';
+      copy.querySelectorAll('.character-profile').forEach(profile => { profile.hidden = true; });
+      copy.querySelectorAll('.relationship-map .is-dimmed').forEach(element => element.classList.remove('is-dimmed'));
       const html = '<!doctype html>\n' + copy.outerHTML;
       const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
       const link = document.createElement('a');
@@ -222,6 +651,14 @@
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       status.textContent = '已发起下载。打开下载的 HTML 可继续编辑。';
+    }
+
+    document.querySelector('#download').addEventListener('click', downloadHtml);
+    document.addEventListener('keydown', (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey ||
+          event.isComposing || event.key.toLowerCase() !== 's') return;
+      event.preventDefault();
+      if (!event.repeat) downloadHtml();
     });
   </script>
 </body>

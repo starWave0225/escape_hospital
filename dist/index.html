@@ -3,190 +3,130 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101815">
-  <meta name="description" content="在医院的三层楼和地下室之间探索。">
-  <title>地狱无门</title>
-  <link rel="stylesheet" href="style.css?v=3">
-  <script src="hospital.js?v=2" defer></script>
-  <script src="map.js" defer></script>
-  <script src="lighting.js" defer></script>
-  <script src="quake.js" defer></script>
-  <script src="game.js?v=4" defer></script>
+  <meta name="theme-color" content="#111722">
+  <meta name="description" content="京海街坊的都市传说板，讨论京海本地怪谈、旧闻和亲身经历。">
+  <title>都市传说板 · 京海街坊</title>
+  <link rel="stylesheet" href="investigation.css?v=5">
+  <link rel="stylesheet" href="desktop.css?v=2">
+  <link rel="stylesheet" href="forum.css?v=3">
+  <link rel="stylesheet" href="profile.css?v=3">
+  <link rel="stylesheet" href="map-lookup.css?v=2">
+  <link rel="stylesheet" href="web-flow.css?v=3">
+  <link rel="stylesheet" href="records-site.css?v=4">
+  <link rel="stylesheet" href="press-site.css?v=3">
+  <link rel="stylesheet" href="institution-sites.css">
+  <script src="forum-thread.js?v=2" defer></script>
+  <script src="forum-legends.js?v=2" defer></script>
+  <script src="map-lookup.js?v=2" defer></script>
+  <script src="web-public.js?v=4" defer></script>
+  <script src="web-evidence.js?v=4" defer></script>
+  <script src="web-contacts.js" defer></script>
+  <script src="web-flow.js?v=5" defer></script>
+  <script src="records-site.js?v=2" defer></script>
+  <script src="diary.js" defer></script>
+  <script src="press-site.js?v=4" defer></script>
+  <script src="institution-sites.js" defer></script>
+  <script src="investigation.js?v=11" defer></script>
 </head>
-<body>
-    <main id="home" class="home" aria-labelledby="game-title">
-      <div class="home-stage">
-        <div class="home-frame" aria-hidden="true"></div>
-        <div class="home-content">
-          <header class="home-title"><h1 id="game-title">地狱无门</h1></header>
-          <nav id="title-menu" class="title-menu" aria-label="主菜单">
-            <button type="button" class="title-menu-entry" id="new-game" disabled>开始游戏</button>
-            <button type="button" class="title-menu-entry" id="continue-game" disabled>继续游戏</button>
-            <button type="button" class="title-menu-entry" id="load-game" disabled>读取存档</button>
-            <button type="button" class="title-menu-entry" id="open-settings">游戏设置</button>
-          </nav>
-          <div id="asset-loading" class="asset-loading">
-            <progress id="asset-progress" aria-label="素材加载进度"></progress>
-            <p id="asset-status" role="status">正在加载游戏素材</p>
-          </div>
-          <button type="button" id="retry-assets" class="quiet" hidden>重新加载</button>
-        </div>
-        <footer class="title-footer" aria-hidden="true">↑ ↓ 选择 <span>·</span> Enter 确认</footer>
+<body class="investigation">
+  <main class="desktop-view" id="desktop-view" aria-label="Windows 11 桌面">
+    <div class="desktop-shortcuts">
+      <button type="button" class="desktop-shortcut" data-open-browser>
+        <span class="desktop-icon" aria-hidden="true"></span>
+        <span>Microsoft Edge</span>
+      </button>
+      <button type="button" class="desktop-shortcut" data-open-map>
+        <span class="map-app-icon" aria-hidden="true"></span>
+        <span>地图</span>
+      </button>
+    </div>
+  </main>
+  <noscript><p>请启用 JavaScript 打开桌面和论坛。</p></noscript>
+  <div class="browser-view" id="browser-view" hidden>
+  <header class="browser-chrome" aria-label="浏览器窗口">
+    <div class="browser-tabs">
+      <div class="browser-tab-strip" id="browser-tab-strip" aria-label="浏览器标签页"></div>
+      <button type="button" class="browser-new-tab" id="browser-new-tab" aria-label="新建标签页">+</button>
+      <button type="button" class="browser-close" id="browser-close" aria-label="关闭浏览器，返回桌面">×</button>
+    </div>
+    <div class="browser-tools">
+      <button type="button" class="browser-back" id="browser-back" aria-label="上一页" disabled>←</button>
+      <button type="button" class="browser-forward" id="browser-forward" aria-label="下一页" disabled>→</button>
+      <form class="browser-omnibox" id="browser-omnibox" role="search" aria-label="Edge 地址栏">
+        <input class="browser-address" id="browser-address" type="text" inputmode="search" enterkeyhint="search"
+          aria-label="搜索或输入网址" placeholder="搜索或输入网址" autocomplete="off" spellcheck="false" maxlength="160">
+        <button type="submit" aria-label="搜索地址栏">搜索</button>
+      </form>
+      <button type="button" class="browser-notes-toggle" id="browser-notes-toggle" aria-controls="case-sidebar" aria-expanded="false">笔记</button>
+    </div>
+  </header>
+  <aside class="case-sidebar browser-notes" id="case-sidebar" aria-labelledby="case-notebook" hidden>
+    <h2 id="case-notebook">调查笔记</h2>
+    <p class="case-progress" id="case-progress" aria-live="polite"></p>
+    <h3>已记下的网页</h3>
+    <ul class="record-list" id="case-records"></ul>
+  </aside>
+  <header class="professional-bar" aria-label="LinkedIn 公开档案">
+    <div class="shell">
+      <a href="#career" class="professional-brand"><span class="professional-mark" aria-hidden="true">in</span>LinkedIn</a>
+      <nav aria-label="领英导航"><a href="#career">找人</a></nav>
+    </div>
+  </header>
+  <header class="forum-banner" aria-label="京海街坊">
+    <div class="shell forum-identity">
+      <img class="forum-emblem" src="assets/forum-night.webp" alt="">
+      <div class="forum-identity-copy">
+        <h1 class="forum-banner-name"><a href="#forum">京海街坊</a></h1>
+        <p class="forum-banner-description">京海本地的灵异经历、旧闻与都市传说</p>
       </div>
-      <dialog id="character-select" class="title-dialog" aria-labelledby="character-label">
-        <div class="dialog-bar">
-          <h2 id="character-label">选择主角</h2>
-          <button type="button" class="quiet dialog-close" aria-label="关闭">×</button>
-        </div>
-        <div class="title-dialog-body">
-          <div class="character-options">
-            <button type="button" class="character-option" data-character="man" aria-pressed="false">
-              <canvas width="272" height="256" aria-hidden="true"></canvas><span>男</span>
-            </button>
-            <button type="button" class="character-option" data-character="woman" aria-pressed="false">
-              <canvas width="272" height="256" aria-hidden="true"></canvas><span>女</span>
-            </button>
-          </div>
-          <p id="new-game-warning" hidden>进入医院后将覆盖当前自动存档。</p>
-          <button type="button" id="enter-game" class="enter-game" disabled>进入医院</button>
-        </div>
-      </dialog>
-      <dialog id="load-dialog" class="title-dialog" aria-labelledby="load-label">
-        <div class="dialog-bar">
-          <h2 id="load-label">读取存档</h2>
-          <button type="button" class="quiet dialog-close" aria-label="关闭">×</button>
-        </div>
-        <div class="title-dialog-body">
-          <button type="button" id="load-slot" class="title-menu-entry save-slot">自动存档 <span id="save-location"></span></button>
-          <p id="no-save" hidden>暂无存档</p>
-        </div>
-      </dialog>
-      <dialog id="settings-dialog" class="title-dialog" aria-labelledby="settings-label">
-        <div class="dialog-bar">
-          <h2 id="settings-label">游戏设置</h2>
-          <button type="button" class="quiet dialog-close" aria-label="关闭">×</button>
-        </div>
-        <div class="title-dialog-body">
-          <label class="volume-control">背景音乐 <input id="music-volume" type="range" min="0" max="100" value="47"><output id="volume-value">47%</output></label>
-        </div>
-      </dialog>
-    </main>
-    <main id="stage" class="stage" aria-label="地狱无门" hidden>
-        <p id="controls" class="sr-only">单击地面步行，双击奔跑。WASD 或方向键移动，按住 Shift 奔跑，J 攻击，E 交互，T 开关手电，I 背包，B 背景音乐，M 地图，F 全屏。奔跑和攻击消耗体力。理智随时间下降，三楼黑暗中下降更快，归零即死亡。</p>
-        <span id="location" class="sr-only" role="status"></span>
-        <span id="flashlight-status" class="sr-only" role="status"></span>
-        <span id="music-status" class="sr-only" role="status"></span>
-        <span id="combat-status" class="sr-only" role="status"></span>
-        <div id="death-sequence" class="death-sequence" aria-hidden="true" hidden></div>
-        <div id="viewport" class="viewport" role="region" aria-label="游戏场景" aria-describedby="controls">
-          <div id="world" class="world">
-            <div id="backdrop" class="backdrop"></div>
-            <canvas id="quake" class="quake" aria-hidden="true"></canvas>
-            <div id="markers" class="markers"></div>
-            <canvas id="sanity-figure" class="sanity-figure" width="272" height="256" aria-hidden="true"></canvas>
-            <canvas id="lighting" class="lighting" aria-hidden="true" hidden></canvas>
-            <div id="player" class="actor player" aria-hidden="true">
-              <div class="shadow"></div>
-              <canvas id="player-body" class="player-body" width="272" height="256"></canvas>
-              <span class="attack-sweep"></span>
-            </div>
-          </div>
-          <div class="vignette"></div>
-          <div class="sanity-haze" aria-hidden="true"></div>
-          <button id="minimap" type="button" class="minimap" aria-label="展开医院地图" aria-haspopup="dialog">
-            <span class="minimap-heading" id="map-position"></span>
-            <canvas id="map-canvas" width="512" height="176" aria-hidden="true"></canvas>
-          </button>
-          <div class="status-hud" id="status-hud" aria-label="角色状态">
-            <div class="status-resource sanity-resource">
-              <meter id="sanity" class="sr-only" min="0" max="100" value="100" aria-label="理智"></meter>
-              <svg class="status-organ" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-                <defs>
-                  <path id="brain-shape" d="M50 9C45 5 38 5 33 8C26 4 18 8 15 13C8 15 5 22 7 28C2 34 5 43 11 46C13 53 21 57 29 54C34 59 44 59 50 54Z"/>
-                  <linearGradient id="sanity-liquid" x2=".68" y2="1">
-                    <stop stop-color="#e89583"/><stop offset=".58" stop-color="#a4494f"/><stop offset="1" stop-color="#56252e"/>
-                  </linearGradient>
-                </defs>
-                <use class="organ-shell" href="#brain-shape"/>
-                <use class="organ-liquid" href="#brain-shape" fill="url(#sanity-liquid)"/>
-                <path class="organ-detail" d="M15 13c4-2 10 1 10 5m8-10c-2 7 3 11 9 12m-35 8c3 3 9 3 13-1s12-2 13 3c1 4 5 6 11 5m-33 11c4 2 8 1 11-3s10-5 15-1m-8 12c-1-3 0-5 2-7m15-36v41"/>
-                <use class="organ-rim" href="#brain-shape"/>
-              </svg>
-              <span class="status-reading" aria-hidden="true">理智 <b id="sanity-number">100</b></span>
-            </div>
-            <div class="status-resource stamina-resource">
-              <meter id="stamina" class="sr-only" min="0" max="100" value="100" aria-label="体力"></meter>
-              <svg class="status-organ" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-                <defs>
-                  <path id="heart-shape" d="M19 23L15 11l8-3 4 11 4-2V8l7-2 2 10c5 0 9 2 10 6l-4 6c6 3 10 10 9 17s-5 12-10 13c-8 0-23-10-29-19-5-7-4-12 3-16Z"/>
-                  <linearGradient id="stamina-liquid" x2=".68" y2="1">
-                    <stop stop-color="#b4d6dc"/><stop offset=".54" stop-color="#4e849b"/><stop offset="1" stop-color="#244356"/>
-                  </linearGradient>
-                </defs>
-                <use class="organ-shell" href="#heart-shape"/>
-                <use class="organ-liquid" href="#heart-shape" fill="url(#stamina-liquid)"/>
-                <path class="organ-detail" d="M19 23c4 4 8 5 13 5m8-12c-6 1-8 4-8 12 0 10 4 18 11 25m3-25c-5-1-9 1-12 6m2 7c6 2 10 1 13-1m-23 2c0-4-2-7-6-9"/>
-                <use class="organ-rim" href="#heart-shape"/>
-              </svg>
-              <span class="status-reading" aria-hidden="true">体力 <b id="stamina-number">100</b></span>
-            </div>
-          </div>
-          <div class="flashlight-control">
-            <button type="button" id="open-backpack" class="gear-button backpack-toggle" aria-label="打开背包" aria-keyshortcuts="I" aria-haspopup="dialog" aria-controls="backpack">
-              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M9 5V3h6v2M5 10H3v8h2m14-8h2v8h-2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                <path d="M5 8l3-3h8l3 3v12l-2 1H7l-2-1z" fill="#665039" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-                <path d="M5 9h14M9 9v4h6V9m-7 6h8v3H8z" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <button type="button" id="flashlight-toggle" class="gear-button flashlight-toggle" aria-label="手电" aria-keyshortcuts="T" aria-pressed="false" aria-describedby="battery-level" data-powered="false">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3.5 9h7l4-3h2v12h-2l-4-3h-7zM7 12h1.5"/>
-                <path class="flashlight-rays" d="M19 12h3m-3-4 2.5-1.5M19 16l2.5 1.5"/>
-              </svg>
-            </button>
-            <span id="battery-level" class="battery-level">0%</span>
-            <span id="flashlight-hint" class="flashlight-hint" role="status"></span>
-          </div>
-        </div>
-        <div class="touch-controls" aria-label="触屏操作">
-          <div class="dpad">
-            <button type="button" class="up" data-move="up" aria-label="向上">↑</button>
-            <button type="button" class="left" data-move="left" aria-label="向左">←</button>
-            <button type="button" class="down" data-move="down" aria-label="向下">↓</button>
-            <button type="button" class="right" data-move="right" aria-label="向右">→</button>
-          </div>
-          <div class="touch-actions">
-            <button type="button" data-move="sprint">奔跑</button>
-            <button type="button" id="touch-attack">攻击</button>
-            <button type="button" id="touch-interact">交互</button>
-          </div>
-        </div>
-        <dialog id="map" aria-labelledby="map-title">
-          <div class="dialog-bar">
-            <span id="map-title">医院地图</span>
-            <button type="button" id="close-map" class="quiet" aria-label="关闭地图">×</button>
-          </div>
-          <div class="floors" id="floors"></div>
-          <p class="map-legend"><span>◆ 你的位置</span><span>■ 已到访</span><span>↑↓ 楼梯</span></p>
-        </dialog>
-        <dialog id="death-dialog" class="death-dialog" aria-labelledby="death-title">
-          <h2 id="death-title">你已死亡</h2>
-          <p>理智耗尽</p>
-          <button type="button" class="title-menu-entry" id="restart-game">重新开始</button>
-        </dialog>
-        <dialog id="backpack" class="backpack" aria-labelledby="backpack-title">
-          <div class="dialog-bar">
-            <h2 id="backpack-title">背包</h2>
-            <span id="backpack-capacity" class="backpack-capacity"></span>
-            <button type="button" id="close-backpack" class="quiet dialog-close" aria-label="关闭背包">×</button>
-          </div>
-          <ol id="backpack-slots" class="backpack-slots" aria-label="物品栏"></ol>
-          <div class="backpack-detail">
-            <div id="backpack-detail" role="status"></div>
-            <button type="button" id="backpack-use" class="quiet" hidden>使用</button>
-          </div>
-        </dialog>
-    </main>
+      <button type="button" class="forum-follow" id="forum-follow" aria-pressed="false">关注</button>
+    </div>
+  </header>
+  <header class="site-header">
+    <div class="shell">
+      <a class="brand" href="#forum">京海街坊</a>
+      <nav aria-label="站内导航">
+        <a class="site-link" href="#forum" data-page="forum">都市传说板</a>
+        <a class="site-link" href="#press" data-page="press" data-new-tab>京海晚报</a>
+        <a class="site-link" href="#career" data-page="career" data-new-tab>LinkedIn</a>
+        <a class="site-link" href="#map" data-page="map" data-new-tab>地图</a>
+      </nav>
+    </div>
+  </header>
+  <div class="shell">
+    <header class="case-head">
+      <p class="case-kicker">京海街坊 / 异闻讨论区</p>
+      <h1>都市传说</h1>
+      <p class="case-subtitle">京海本地的怪谈、旧闻和亲历帖。</p>
+    </header>
+    <div class="case-grid">
+      <main class="case-page" id="case-page"></main>
+      <aside class="case-sidebar forum-sidebar" id="forum-sidebar" aria-label="本吧信息" hidden></aside>
+    </div>
+    <footer class="site-footer">
+      <span>地狱无门</span>
+      <a class="dlc-link" href="hospital.html">医院逃生 DLC <span aria-hidden="true">↗</span></a>
+    </footer>
+  </div>
+  </div>
+  <section class="desktop-start" id="desktop-start" aria-label="开始菜单" hidden>
+    <h2>已固定</h2>
+    <button type="button" class="desktop-shortcut" data-open-browser>
+      <span class="desktop-icon" aria-hidden="true"></span>
+      <span>Microsoft Edge</span>
+    </button>
+    <button type="button" class="desktop-shortcut" data-open-map>
+      <span class="map-app-icon" aria-hidden="true"></span>
+      <span>地图</span>
+    </button>
+  </section>
+  <div class="desktop-taskbar">
+    <div class="taskbar-apps">
+      <button type="button" class="taskbar-button taskbar-start" id="start-menu-button" aria-label="开始" aria-controls="desktop-start" aria-expanded="false"><span aria-hidden="true"></span></button>
+      <button type="button" class="taskbar-button" id="taskbar-edge" aria-label="打开 Microsoft Edge"><span class="desktop-icon" aria-hidden="true"></span></button>
+      <button type="button" class="taskbar-button" data-open-map aria-label="打开地图" title="地图"><span class="map-app-icon" aria-hidden="true"></span></button>
+    </div>
+    <time class="taskbar-clock" datetime="2026-06-20T23:54">23:54<br>2026/6/20</time>
+  </div>
 </body>
 </html>

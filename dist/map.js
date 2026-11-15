@@ -21,7 +21,8 @@ const HospitalMap = (() => {
       cells.push({
         id: door.target, x: x - (9 + 50 * entrance.x / room.width), y: north ? 10 : 124,
         width: 68, height: 42, stairs, doorX: x, north,
-        stairDirections: room.doors.filter((portal) => portal.verb !== "开门").map((portal) => portal.id === "up" ? "↑" : "↓").join(""),
+        stairDirections: room.doors.filter((portal) => portal.id === "up" || portal.id === "down")
+          .map((portal) => portal.id === "up" ? "↑" : "↓").join(""),
       });
     }
     return cells;
@@ -95,7 +96,7 @@ const HospitalMap = (() => {
     context.restore();
   }
 
-  function update(id, visited) {
+  function update(id, visited, lockedAreas) {
     const scene = scenes[id];
     label.textContent = (scene.hallucination ? "？" : scene.floor) + " / " + scene.name;
     const sections = floors.map((floor) => {
@@ -107,6 +108,12 @@ const HospitalMap = (() => {
       const code = document.createElement("span");
       code.textContent = floor.id;
       heading.append(code);
+      if (lockedAreas.has(floor.id)) {
+        const lock = document.createElement("span");
+        lock.className = "map-lock";
+        lock.textContent = "入口上锁";
+        heading.append(lock);
+      }
       const cells = plan(floor.id);
       const north = document.createElement("div");
       const south = document.createElement("div");
@@ -114,6 +121,7 @@ const HospitalMap = (() => {
       south.className = "map-rooms south";
       cells.slice(1).forEach((cell, index) => {
         const entry = mapCell(cell.id, cell.stairs ? cell.stairDirections + " 楼梯" : scenes[cell.id].name);
+        if (lockedAreas.has(cell.id)) entry.textContent += " · 上锁";
         entry.style.gridColumn = index + 1;
         (cell.north ? north : south).append(entry);
       });

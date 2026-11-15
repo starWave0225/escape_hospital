@@ -21,15 +21,44 @@ const ghosts = [
   { art: "ghost-crawling", height: .65 },
 ];
 const ghostArt = new Map();
-const characterButtons = [...document.querySelectorAll("[data-character]")];
+const playerCharacter = "man";
 const characterArt = new Map();
 // Hip positions in the four running frames, in 272 px sprite coordinates.
 const runHips = {
-  man: { side: [110, 118, 104, 116], front: [129, 142, 130, 144], back: [141, 128, 138, 132] },
-  woman: { side: [120, 117, 119, 116], front: [136, 143, 133, 137], back: [132, 130, 136, 143] },
+  side: [110, 118, 104, 116],
+  front: [129, 142, 130, 144],
+  back: [141, 128, 138, 132],
 };
 const map = get("map");
 const backpack = get("backpack");
+const documentJournal = get("documents");
+const inspection = get("inspection");
+const inspectionView = get("inspection-view");
+const inspectionItems = get("inspection-items");
+const inspectionStatus = get("inspection-status");
+const storyDialog = get("story-dialog");
+const wardIntro = get("ward-intro");
+const wardView = get("ward-view");
+const wardIntroAction = get("ward-intro-action");
+const openingScene = get("opening-scene");
+const openingLine = get("opening-line");
+const openingNext = get("opening-next");
+const skipOpening = get("skip-opening");
+const wardQte = get("ward-qte");
+const wardQteAction = get("ward-qte-action");
+const wardQteTrack = get("ward-qte-track");
+const wardQteRounds = [
+  { from: .34, to: .66, speed: .65 },
+  { from: .18, to: .45, speed: .76 },
+  { from: .54, to: .77, speed: .86 },
+];
+let wardPhase;
+let openingSeen = true;
+let openingIndex = 0;
+let openingRemaining = 0;
+let wardQteHits = 0;
+let wardQteTravel = 0;
+let wardQteCooldown = 0;
 const deathDialog = get("death-dialog");
 const deathSequence = get("death-sequence");
 const reachingHands = [new Image(), new Image()];
@@ -79,6 +108,12 @@ const itemCatalog = {
   [batteryItem]: { name: "备用电池", description: "手电当前的电池耗尽时自动换上，可照明约 3 分钟。" },
   [medicineItem]: { name: "安神药", description: "使用后恢复 " + medicineRecovery + " 点理智。" },
 };
+const supplyItems = {
+  battery: { type: batteryItem, name: "手电电池" },
+  "spare-battery": { type: batteryItem, name: "备用电池" },
+  "medicine-1F-room-2": { type: medicineItem, name: itemCatalog[medicineItem].name },
+  "medicine-2F-room-3": { type: medicineItem, name: itemCatalog[medicineItem].name },
+};
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 let visited = new Set();
 let sceneId = start;
@@ -107,7 +142,6 @@ let spareBatteryTaken = false;
 let inventory = [];
 let pickedMedicine = new Set();
 let selectedBackpackSlot = -1;
-let drawerOpen = false;
 let batterySeconds = 0;
 let cabinetArt;
 let flashlightOn = false;
@@ -115,30 +149,29 @@ let emptyFlashTimer;
 let flashlightHintTimer;
 let changingScene = false;
 let destination;
+let hiddenAt;
 let lastClickScene;
 let mousePosition;
 let frameTime;
 let viewScale = 1;
 let visibleWidth = 900;
 let saveDelay;
-let character;
 let assetsReady = false;
 let gameStarted = false;
+let enteringGame = false;
 let savedGame = false;
-let startingNewGame = false;
 
 function hasAmbientLight() {
-  return scene.floor !== "3F";
+  return scene.floor !== "3F" || HospitalStory.hasPower();
 }
 
 function readSave() {
   try {
     const saved = JSON.parse(localStorage.getItem(saveKey));
     if (!saved || !Object.hasOwn(scenes, saved.scene)) return;
+    openingSeen = saved.openingSeen !== false;
+    HospitalStory.read(saved.story);
     savedGame = true;
-    if (characterButtons.some((button) => button.dataset.character === saved.character)) {
-      character = saved.character;
-    }
     sceneId = saved.scene;
     if (Array.isArray(saved.visited)) {
       visited = new Set(saved.visited.filter((id) => Object.hasOwn(scenes, id)));
@@ -160,6 +193,7 @@ function readSave() {
       player.x = entrance.x;
       player.y = entrance.landingY;
     }
+    scene = scenes[sceneId];
     exhausted = Boolean(saved.exhausted) && stamina < sprintThreshold;
     starterBatteryTaken = saved.starterBatteryTaken === true || saved.hasBattery === true;
     spareBatteryTaken = saved.spareBatteryTaken === true;
@@ -169,7 +203,6 @@ function readSave() {
     if (Array.isArray(saved.pickedMedicine)) {
       pickedMedicine = new Set(saved.pickedMedicine.filter((id) => typeof id === "string"));
     }
-    drawerOpen = saved.drawerOpen === true || spareBatteryTaken;
     batterySeconds = Number.isFinite(saved.batterySeconds) ? clamp(saved.batterySeconds, 0, batteryLifetime)
       : starterBatteryTaken ? batteryLifetime : 0;
     flashlightOn = batterySeconds > 0 && saved.flashlightOn === true;
@@ -184,6 +217,7 @@ function save() {
   try {
     localStorage.setItem(saveKey, JSON.stringify({
       scene: sceneId,
+      openingSeen,
       sceneWidth: scene.width,
       visited: [...visited],
       x: player.x,
@@ -197,10 +231,9 @@ function save() {
       spareBatteryTaken,
       inventory,
       pickedMedicine: [...pickedMedicine],
-      drawerOpen,
       batterySeconds,
       flashlightOn,
-      character,
+      story: HospitalStory.data(),
     }));
   } catch {
     // The current session can continue without storage.
@@ -221,10 +254,10 @@ function render() {
   actor.style.left = player.x + "px";
   actor.style.top = player.y + "px";
   const depth = (player.y - scene.back) / (scene.front - scene.back);
-  const height = scene.doorHeight * (character === "man" ? .85 : .81);
+  const height = scene.doorHeight * .85;
   actor.style.height = height + "px";
   actor.style.width = height * 272 / 256 + "px";
-  drawCharacter(playerArt, character, gait, sprinting, stride, player.facing, player.direction);
+  drawCharacter(playerArt, playerCharacter, gait, sprinting, stride, player.facing, player.direction);
   HospitalMap.draw(sceneId, visited, { x: player.x, depth, direction: player.direction });
   const aim = player.direction;
   Lighting.draw({
@@ -235,8 +268,8 @@ function render() {
     direction: aim,
   });
 
-  const next = sceneInteractions
-    .filter((interaction) => Math.abs(interaction.x - player.x) <= (interaction.kind === "item" ? 55 : 82) &&
+  const next = hiddenAt ?? sceneInteractions
+    .filter((interaction) => Math.abs(interaction.x - player.x) <= (interaction.kind ? 55 : 82) &&
       Math.abs(interaction.y - player.y) <= (interaction.side ? 32 : 46))
     .sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0];
   if (next !== nearby) showInteractionCue(next);
@@ -263,8 +296,8 @@ function drawCharacter(context, id, pose, running = false, distance = 0, facing 
   if (pose === "idle") {
     context.drawImage(image, 0, row * height, width, height, 0, 0, width, height);
   } else if (running) {
-    const scale = id === "man" ? .82 : .78;
-    const hipX = runHips[id][view][frame];
+    const scale = .82;
+    const hipX = runHips[view][frame];
     const lift = side && frame % 2 === 1 ? 5 : 0;
     context.drawImage(image, frame * width, row * height, width, height,
       width / 2 - hipX * scale, height * (1 - scale) - lift, width * scale, height * scale);
@@ -427,7 +460,7 @@ function spawnFigure() {
     figureArt.clearRect(0, 0, width, canvasHeight);
     figureArt.drawImage(image, (width - spriteWidth) / 2, canvasHeight - spriteHeight, spriteWidth, spriteHeight);
   } else {
-    drawCharacter(figureArt, character === "man" ? "woman" : "man", "idle", false, 0, 1, Math.PI / 2);
+    drawCharacter(figureArt, playerCharacter, "idle", false, 0, 1, Math.PI / 2);
   }
   sanityFigure.style.height = height + "px";
   sanityFigure.style.width = height * 272 / 256 + "px";
@@ -476,6 +509,7 @@ function clearSanityEffects() {
 
 function showDeath() {
   if (!deathSequence.hidden || deathDialog.open) return;
+  if (hiddenAt) leaveHideout();
   clearMovement();
   clearSanityEffects();
   Quake.clearAir();
@@ -484,6 +518,7 @@ function showDeath() {
   world.classList.add("player-dead");
   music.pause();
   get("combat-status").textContent = "理智耗尽。";
+  get("restart-game").textContent = HospitalStory.hasRescue() ? "从求援检查点继续" : "重新开始";
   playDeathSequence();
 }
 
@@ -533,7 +568,7 @@ function setAttackTime(time) {
 }
 
 function attack() {
-  if (gameMenuOpen() || changingScene || attackTime > 0) return;
+  if (hiddenAt || gameMenuOpen() || changingScene || attackTime > 0) return;
   const combatStatus = get("combat-status");
   if (stamina < attackCost) {
     combatStatus.textContent = "体力不足，无法攻击。";
@@ -594,7 +629,7 @@ function drainBattery(elapsed) {
 }
 
 function toggleFlashlight() {
-  if (changingScene || gameMenuOpen()) return;
+  if (hiddenAt || changingScene || gameMenuOpen()) return;
   if (!batterySeconds) {
     if (emptyFlashTimer !== undefined) return;
     emptyFlashTimer = setTimeout(() => {
@@ -634,6 +669,8 @@ function prepareBackdrop(art) {
 }
 
 function showScene(id, image, arrival) {
+  const previousScene = sceneId;
+  if (hiddenAt) leaveHideout();
   sceneId = id;
   scene = scenes[id];
   visited.add(id);
@@ -660,34 +697,185 @@ function showScene(id, image, arrival) {
   backdrop.replaceChildren(image, ...(clean ? [clean] : []));
 
   updateSanityStage();
+  HospitalStory.newScene(previousScene, arrival);
   buildInteractionCues();
-  HospitalMap.update(sceneId, visited);
+  HospitalMap.update(sceneId, visited, HospitalStory.lockedAreas());
   updateViewSize();
   renderStamina();
   renderSanity();
-  if (sanity === 0) showDeath();
+  if (HospitalStory.isFinished()) HospitalStory.showEnding();
+  else if (sanity === 0) showDeath();
+  else if (id === start && HospitalStory.canCollect("knife")) openWardIntro();
   save();
 }
 
-function buildInteractionCues() {
-  const items = [];
-  const itemSprites = [];
-  for (const item of scene.items || []) {
-    if (item.id === "drawer") {
-      const [x, y, width, height] = item.sprite;
-      const cabinet = document.createElement("span");
-      cabinet.className = "battery-cabinet";
-      cabinet.classList.toggle("open", drawerOpen);
-      Object.assign(cabinet.style, { left: x + "px", top: y + "px", width: width + "px", height: height + "px" });
-      cabinet.setAttribute("aria-hidden", "true");
-      cabinet.append(cabinetArt);
-      itemSprites.push(cabinet);
-      if (!drawerOpen) items.push(item);
-      else if (!spareBatteryTaken) items.push(item.contents);
-    } else if (item.inventoryId === medicineItem ? !pickedMedicine.has(item.id) : !starterBatteryTaken) {
-      items.push(item);
-    }
+function showWardPhase(phase) {
+  wardPhase = phase;
+  wardView.dataset.phase = phase;
+  wardIntroAction.hidden = phase === "qte";
+  wardQte.hidden = phase !== "qte";
+  if (phase === "search") {
+    get("ward-intro-hint").textContent = "林一睁开眼，发现自己的双手被绑在床上。右手边的床垫有一角翘起。";
+    wardIntroAction.setAttribute("aria-label", "查看床垫");
+    wardIntroAction.removeAttribute("title");
+    wardIntroAction.textContent = "查看床垫";
+  } else if (phase === "knife") {
+    get("ward-intro-hint").textContent = "床垫缝里露出一截刀柄。";
+    wardIntroAction.setAttribute("aria-label", "拿起餐刀");
+    wardIntroAction.title = "拿起餐刀";
+    wardIntroAction.replaceChildren(createItemIcon("knife"));
+  } else {
+    get("ward-intro-hint").textContent = "游标进入浅色目标区时，点击或按 E、空格。";
+    updateWardQteRound();
+    wardQteAction.focus();
   }
+}
+
+function openWardIntro() {
+  clearMovement();
+  wardQteHits = 0;
+  wardQteTravel = 0;
+  wardQteCooldown = 0;
+  get("ward-qte-feedback").textContent = "";
+  if (openingSeen) {
+    finishWardWake();
+    wardIntro.showModal();
+    wardIntroAction.focus();
+    return;
+  }
+  wardPhase = "opening";
+  wardIntro.dataset.phase = wardPhase;
+  wardIntro.setAttribute("aria-label", "林一的开场自白");
+  wardIntro.removeAttribute("aria-describedby");
+  wardView.hidden = true;
+  get("ward-intro-caption").hidden = true;
+  openingScene.hidden = false;
+  skipOpening.hidden = false;
+  openingIndex = 0;
+  showOpeningLine();
+  wardIntro.showModal();
+  openingNext.focus();
+}
+
+function showOpeningLine() {
+  const { shot, seconds, text } = HospitalCase.opening[openingIndex];
+  openingScene.dataset.shot = shot;
+  openingRemaining = seconds;
+  openingLine.textContent = text;
+}
+
+function advanceOpening() {
+  if (wardPhase !== "opening" || !wardIntro.open) return;
+  openingIndex += 1;
+  if (openingIndex === HospitalCase.opening.length) beginWardWake();
+  else showOpeningLine();
+}
+
+function beginWardWake() {
+  wardPhase = "wake";
+  wardIntro.dataset.phase = wardPhase;
+  wardView.dataset.phase = wardPhase;
+  wardIntro.setAttribute("aria-label", "林一醒来");
+  openingScene.hidden = true;
+  wardIntroAction.hidden = true;
+  wardView.hidden = false;
+  openingSeen = true;
+  save();
+  skipOpening.focus();
+}
+
+function finishWardWake() {
+  openingScene.hidden = true;
+  skipOpening.hidden = true;
+  wardView.hidden = false;
+  get("ward-intro-caption").hidden = false;
+  wardIntro.dataset.phase = "bedside";
+  wardIntro.setAttribute("aria-label", "201 病房");
+  wardIntro.setAttribute("aria-describedby", "ward-intro-hint");
+  showWardPhase("search");
+  if (wardIntro.open) wardIntroAction.focus();
+}
+
+function updateWardQteRound() {
+  const { from, to } = wardQteRounds[wardQteHits];
+  wardQteTrack.style.setProperty("--target-start", `${from * 100}%`);
+  wardQteTrack.style.setProperty("--target-width", `${(to - from) * 100}%`);
+  get("ward-qte-progress").textContent = `已磨开 ${wardQteHits} / ${wardQteRounds.length}`;
+  wardQteTrack.style.setProperty("--cursor-position", "0%");
+}
+
+function wardCursorPosition() {
+  return wardQteTravel <= 1 ? wardQteTravel : 2 - wardQteTravel;
+}
+
+function animateWardQte(elapsed) {
+  if (wardQteCooldown > 0) {
+    wardQteCooldown = Math.max(0, wardQteCooldown - elapsed);
+    return;
+  }
+  wardQteTravel = (wardQteTravel + elapsed * wardQteRounds[wardQteHits].speed) % 2;
+  wardQteTrack.style.setProperty("--cursor-position", `${wardCursorPosition() * 100}%`);
+}
+
+wardIntro.addEventListener("cancel", (event) => event.preventDefault());
+openingNext.addEventListener("click", advanceOpening);
+skipOpening.addEventListener("click", () => {
+  if (wardPhase === "opening") beginWardWake();
+  else if (wardPhase === "wake") finishWardWake();
+});
+wardView.querySelector(".ward-eyelids").addEventListener("animationend", () => {
+  if (wardPhase === "wake") finishWardWake();
+});
+wardIntroAction.addEventListener("click", () => {
+  if (!wardIntro.open) return;
+  if (wardPhase === "search") showWardPhase("knife");
+  else if (wardPhase === "knife") showWardPhase("qte");
+});
+wardQteAction.addEventListener("click", () => {
+  if (!wardIntro.open || wardPhase !== "qte" || wardQteCooldown > 0) return;
+  const { from, to } = wardQteRounds[wardQteHits];
+  const cursor = wardCursorPosition();
+  const feedback = get("ward-qte-feedback");
+  if (cursor < from || cursor > to) {
+    wardQteCooldown = .30;
+    feedback.textContent = "没对准，再试一次。";
+    return;
+  }
+  wardQteHits += 1;
+  if (wardQteHits < wardQteRounds.length) {
+    wardQteTravel = 0;
+    wardQteCooldown = .32;
+    feedback.textContent = "束缚松了一截。";
+    updateWardQteRound();
+    return;
+  }
+  wardIntro.close();
+  if (HospitalStory.collectItem("knife")) {
+    get("story-notice").textContent = "束缚已磨开，餐刀已放入背包。";
+  }
+});
+
+function buildInteractionCues() {
+  const itemSprites = [];
+  const containers = HospitalCase.storage[sceneId] ?? [];
+  for (const { art, cabinet, outline } of containers) {
+    if (!cabinet && art === "drawer") continue;
+    const fixture = document.createElement("span");
+    if (cabinet) {
+      fixture.className = "battery-cabinet";
+      fixture.append(cabinetArt);
+    } else {
+      fixture.className = "storage-prop";
+      fixture.dataset.prop = art;
+    }
+    fixture.setAttribute("aria-hidden", "true");
+    positionOutline(fixture, cabinet ?? outline);
+    itemSprites.push(fixture);
+  }
+  const items = containers.filter(({ requires }) => !requires || HospitalStory.hasRecord(requires))
+    .map((container) => ({
+      ...container, kind: "item", x: container.outline[0] + container.outline[2] / 2, y: scene.back + 30,
+    }));
   if (scene.art.startsWith("stairs-")) {
     const plate = document.createElement("span");
     plate.className = "stair-floor-plate";
@@ -696,29 +884,57 @@ function buildInteractionCues() {
     itemSprites.push(plate);
   }
   const doors = scene.doors.filter((portal) => !portal.hallucination || sanityStage === "visions");
-  sceneInteractions = [...doors, ...items];
-  for (const { id, inventoryId, outline: [x, y, width, height] } of items) {
-    if (id === "drawer") continue;
-    const sprite = document.createElement("span");
-    sprite.setAttribute("aria-hidden", "true");
-    if (inventoryId === medicineItem) {
-      sprite.className = "medicine-pack scene-medicine";
-      positionOutline(sprite, [x + 3, y + 3, width - 6, height - 6]);
+  const storySpots = HospitalStory.hotspots(sceneId, scene.back + 30);
+  const linHua = LinHua.create(sceneId, scene, storySpots, HospitalStory.hasRecord("wristHua"), drawCharacter);
+  if (linHua) itemSprites.push(linHua);
+  sceneInteractions = [...doors, ...items, ...storySpots];
+  if (scene.hideout) {
+    const { type, outline } = scene.hideout;
+    sceneInteractions.push({
+      id: "hideout", kind: "hideout", type, outline, x: outline[0] + outline[2] / 2,
+      y: scene.back + 35, label: type === "bed" ? "躲进床底" : "躲进高柜",
+    });
+    if (hiddenAt) hiddenAt = sceneInteractions.at(-1);
+  }
+  for (const spot of storySpots) {
+    if (spot.avatar) continue;
+    const symbol = document.createElement("span");
+    symbol.className = "story-spot";
+    if (spot.memory) {
+      symbol.classList.add("memory-spot");
+      symbol.append(createItemIcon("memory"));
     } else {
-      sprite.className = "battery";
-      sprite.style.left = (x + 2) + "px";
-      sprite.style.top = (y + 1) + "px";
+      symbol.textContent = spot.icon;
     }
-    itemSprites.push(sprite);
+    symbol.setAttribute("aria-hidden", "true");
+    positionOutline(symbol, spot.outline);
+    itemSprites.push(symbol);
   }
   markerButtons = new Map(sceneInteractions.map((interaction) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "interaction-cue";
-    button.dataset.interaction = interaction.kind || "transition";
+    button.dataset.interaction = interaction.memory ? "item" : interaction.kind || "transition";
+    if (interaction.memory) button.dataset.memory = "";
+    if (interaction.avatar) button.dataset.avatar = "";
+    if (interaction.kind === "story" && !interaction.memory) {
+      const label = document.createElement("span");
+      label.className = "story-spot-label";
+      label.textContent = interaction.label;
+      button.append(label);
+    }
     if (interaction.side) button.dataset.side = interaction.side;
     positionOutline(button, interaction.outline);
-    button.setAttribute("aria-label", interaction.verb === "开门" ? "开门 · " + interaction.label : interaction.label);
+    const locked = HospitalStory.needsKey(interaction);
+    const label = interaction.verb === "开门" ? "开门 · " + interaction.label : interaction.label;
+    const name = hiddenAt === interaction ? (interaction.type === "bed" ? "离开床底" : "离开高柜") : label;
+    button.setAttribute("aria-label", locked ? name + " · 上锁" : name);
+    if (locked) {
+      const hint = document.createElement("span");
+      hint.className = "story-spot-label";
+      hint.textContent = interaction.label + " · 上锁";
+      button.append(hint);
+    }
     button.addEventListener("click", (event) => {
       if (event.detail === 0 && nearby === interaction) interact(interaction);
     });
@@ -745,49 +961,57 @@ function positionOutline(element, [left, top, width, height]) {
   });
 }
 
+function enterHideout(interaction) {
+  clearMovement();
+  hiddenAt = interaction;
+  player.x = interaction.x;
+  player.y = interaction.y;
+  viewport.dataset.hiding = interaction.type;
+  const leaveLabel = interaction.type === "bed" ? "离开床底" : "离开高柜";
+  markerButtons.get(interaction.id)?.setAttribute("aria-label", leaveLabel);
+  get("hiding-status").textContent = leaveLabel === "离开床底" ? "已躲在床底" : "已躲在高柜内";
+  if (flashlightOn) {
+    flashlightOn = false;
+    updateFlashlightStatus("躲藏时已关闭手电。");
+  }
+  render();
+  save();
+}
+
+function leaveHideout() {
+  clearMovement();
+  markerButtons.get(hiddenAt.id)?.setAttribute("aria-label", hiddenAt.label);
+  hiddenAt = undefined;
+  delete viewport.dataset.hiding;
+  get("hiding-status").textContent = "";
+  render();
+}
+
 async function interact(interaction = nearby) {
   if (gameMenuOpen() || changingScene || attackTime > 0 || !sceneInteractions.includes(interaction)) return;
   destination = undefined;
-  if (interaction.kind === "item") {
-    let message;
-    if (interaction.inventoryId === medicineItem) {
-      const status = get("combat-status");
-      if (inventory.length >= backpackCapacity) {
-        status.textContent = "背包已满。";
-        return;
-      }
-      pickedMedicine.add(interaction.id);
-      inventory.push(medicineItem);
-      status.textContent = "安神药已放入背包。";
-    } else if (interaction.id === "drawer") {
-      drawerOpen = true;
-      message = "抽屉已打开。";
-    } else {
-      if (batterySeconds > 0 && inventory.length >= backpackCapacity) {
-        updateFlashlightStatus("背包已满。");
-        return;
-      }
-      if (interaction.id === "battery") starterBatteryTaken = true;
-      else spareBatteryTaken = true;
-      if (batterySeconds > 0) {
-        inventory.push(batteryItem);
-        message = "已拾取备用电池。";
-      } else {
-        batterySeconds = batteryLifetime;
-        flashlightOn = true;
-        clearTimeout(emptyFlashTimer);
-        emptyFlashTimer = undefined;
-        clearTimeout(flashlightHintTimer);
-        flashlightHint.textContent = "";
-        message = "已装上电池，手电已开启。按 T 可开关。";
-      }
-    }
-    buildInteractionCues();
-    updateFlashlightStatus(message);
-    render();
-    save();
+  if (hiddenAt) {
+    if (interaction === hiddenAt) leaveHideout();
     return;
   }
+  if (interaction.kind === "hideout") {
+    enterHideout(interaction);
+    return;
+  }
+  if (interaction.kind === "story") {
+    HospitalStory.interactWith(interaction.id);
+    return;
+  }
+  if (interaction.kind === "item") {
+    clearMovement();
+    get("inspection-title").textContent = interaction.label;
+    inspectionView.dataset.art = interaction.art;
+    inspectionView.style.backgroundImage = 'url("assets/inspect-' + interaction.art + '.webp")';
+    renderInspection(interaction);
+    inspection.showModal();
+    return;
+  }
+  if (!HospitalStory.allowDoor(interaction)) return;
   const { target, arrival } = interaction;
   changingScene = true;
   try {
@@ -796,6 +1020,81 @@ async function interact(interaction = nearby) {
   } finally {
     changingScene = false;
   }
+}
+
+function createItemIcon(id) {
+  const type = supplyItems[id]?.type ?? HospitalCase.icons[id] ?? (id === medicineItem ? medicineItem : "document");
+  const icon = document.createElement("span");
+  icon.className = type === medicineItem ? "inventory-icon medicine-pack" : "inventory-icon";
+  icon.dataset.item = type;
+  icon.setAttribute("aria-hidden", "true");
+  return icon;
+}
+
+function storedItemAvailable(id) {
+  if (id === "battery") return !starterBatteryTaken;
+  if (id === "spare-battery") return !spareBatteryTaken;
+  if (supplyItems[id]) return !pickedMedicine.has(id);
+  return HospitalStory.canCollect(id);
+}
+
+function collectStoredItem(id, name) {
+  if (!supplyItems[id]) {
+    if (!HospitalStory.collectItem(id)) return;
+    return name + (HospitalStory.items[id] ? "已放入背包。" : "已收入文档栏。");
+  }
+  const { type } = supplyItems[id];
+  const install = type === batteryItem && batterySeconds <= 0;
+  if (!install && inventory.length >= backpackCapacity) return "背包已满。";
+  if (id === "battery") starterBatteryTaken = true;
+  else if (id === "spare-battery") spareBatteryTaken = true;
+  else pickedMedicine.add(id);
+  let message = name + "已放入背包。";
+  if (install) {
+    batterySeconds = batteryLifetime;
+    flashlightOn = true;
+    clearTimeout(emptyFlashTimer);
+    emptyFlashTimer = undefined;
+    clearTimeout(flashlightHintTimer);
+    flashlightHint.textContent = "";
+    message = "已装上电池，手电已开启。按 T 可开关。";
+  } else {
+    inventory.push(type);
+  }
+  updateFlashlightStatus(message);
+  render();
+  save();
+  return message;
+}
+
+function renderInspection(container, message) {
+  const buttons = [];
+  container.contents.forEach((id, index) => {
+    if (!storedItemAvailable(id)) return;
+    const name = supplyItems[id]?.name ?? HospitalStory.items[id]?.name ?? HospitalCase.documents[id][0];
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "inspection-item";
+    button.dataset.pickup = id;
+    button.style.gridColumn = index + 1;
+    button.setAttribute("aria-label", "拾取" + name);
+    button.title = name;
+    button.append(createItemIcon(id));
+    button.addEventListener("click", () => {
+      if (!inspection.open || !storedItemAvailable(id)) return;
+      const result = collectStoredItem(id, name);
+      if (storedItemAvailable(id)) {
+        inspectionStatus.textContent = result;
+      } else {
+        renderInspection(container, result);
+        (inspectionItems.querySelector("button") ?? get("close-inspection")).focus({ preventScroll: true });
+      }
+    });
+    buttons.push(button);
+  });
+  inspectionItems.style.gridTemplateColumns = "repeat(" + container.contents.length + ", minmax(0, 1fr))";
+  inspectionItems.replaceChildren(...buttons);
+  inspectionStatus.textContent = message ?? (buttons.length ? "" : "里面已经空了。");
 }
 
 function clearMovement() {
@@ -828,7 +1127,7 @@ function updateCursor() {
   const interaction = interactionAt(point);
   const discoverable = hasAmbientLight() || interaction === nearby;
   const cursor = interaction && discoverable
-    ? interaction.kind || "transition"
+    ? (interaction.memory || interaction.kind === "hideout" ? "item" : interaction.kind || "transition")
     : point.y >= scene.floorY ? "move" : "default";
   if (viewport.dataset.cursor !== cursor) viewport.dataset.cursor = cursor;
 }
@@ -841,6 +1140,10 @@ function aimAtClick(event) {
   const point = worldPoint(event.clientX, event.clientY);
   const { x, y } = point;
   const interaction = interactionAt(point);
+  if (hiddenAt) {
+    if (interaction === hiddenAt) interact(interaction);
+    return;
+  }
   if (!interaction && y < scene.floorY) return;
   destination = {
     x: interaction?.x ?? clamp(x, 33, scene.width - 33),
@@ -855,6 +1158,12 @@ function aimAtClick(event) {
 function animate(time) {
   const elapsed = Math.min((time - (frameTime ?? time)) / 1000, 0.05);
   frameTime = time;
+  if (!document.hidden && wardIntro.open) {
+    if (wardPhase === "opening") {
+      openingRemaining -= elapsed;
+      if (openingRemaining <= 0) advanceOpening();
+    } else if (wardPhase === "qte") animateWardQte(elapsed);
+  }
   if (!document.hidden && !gameMenuOpen() && !changingScene) {
     drainBattery(elapsed);
     updateSanity(elapsed);
@@ -862,12 +1171,17 @@ function animate(time) {
       updateSanityEffects(elapsed);
       if (attackTime > 0) setAttackTime(Math.max(0, attackTime - elapsed));
       updateMovement(elapsed, time);
+      if (!gameMenuOpen() && !changingScene) HospitalStory.tick(elapsed);
     }
   }
   requestAnimationFrame(animate);
 }
 
 function updateMovement(elapsed, time) {
+  if (hiddenAt) {
+    updateStamina(elapsed, false, false);
+    return;
+  }
   const canMove = attackTime === 0 && stumbleTime === 0;
   const directions = new Set();
   if (canMove) {
@@ -929,10 +1243,28 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   const key = event.key.toLowerCase();
-  if ((key === "m" || key === "i") && !event.repeat) {
+  if (wardIntro.open) {
+    if (wardPhase === "opening" || wardPhase === "wake") {
+      if (key === "e") {
+        event.preventDefault();
+        if (!event.repeat) {
+          if (wardPhase === "opening") advanceOpening();
+          else finishWardWake();
+        }
+      }
+      return;
+    }
+    if (key === "e" || key === " " || key === "enter") {
+      event.preventDefault();
+      if (!event.repeat) (wardPhase === "qte" ? wardQteAction : wardIntroAction).click();
+    }
+    return;
+  }
+  if ((key === "m" || key === "i" || key === "n") && !event.repeat) {
     event.preventDefault();
+    if (inspection.open && key === "n") inspection.close();
     if (key === "m") toggleGameMenu(map);
-    else toggleGameMenu(backpack);
+    else toggleGameMenu(key === "i" ? backpack : documentJournal);
     return;
   }
   if (gameMenuOpen()) return;
@@ -1004,7 +1336,8 @@ flashlightToggle.addEventListener("click", (event) => {
   toggleFlashlight();
 });
 function gameMenuOpen() {
-  return map.open || backpack.open || deathDialog.open || !deathSequence.hidden;
+  return wardIntro.open || map.open || backpack.open || documentJournal.open || inspection.open ||
+    storyDialog.open || deathDialog.open || !deathSequence.hidden;
 }
 
 function toggleGameMenu(dialog) {
@@ -1016,6 +1349,8 @@ function toggleGameMenu(dialog) {
   if (gameMenuOpen()) return;
   clearMovement();
   if (dialog === backpack) renderBackpack();
+  if (dialog === documentJournal) HospitalStory.showJournal();
+  if (dialog === map) HospitalMap.update(sceneId, visited, HospitalStory.lockedAreas());
   dialog.showModal();
 }
 
@@ -1026,7 +1361,32 @@ function renderBackpack(message) {
   selectedBackpackSlot = -1;
   use.hidden = true;
   get("backpack-capacity").textContent = inventory.length + " / " + backpackCapacity;
-  detail.textContent = message ?? (inventory.length ? "选择物品查看详情" : "背包是空的");
+  const equipment = HospitalStory.equipment();
+  detail.textContent = message ?? (inventory.length || equipment.length ? "选择物品查看详情" : "背包是空的");
+  const equipmentList = get("story-equipment");
+  equipmentList.hidden = !equipment.length;
+  equipmentList.replaceChildren(...equipment.map((id) => {
+    const item = HospitalStory.items[id];
+    const row = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    row.className = "backpack-slot";
+    button.setAttribute("aria-label", item.name);
+    button.setAttribute("aria-pressed", "false");
+    button.title = item.name;
+    button.append(createItemIcon(id));
+    button.addEventListener("click", () => {
+      backpack.querySelector('.backpack-slot [aria-pressed="true"]')?.setAttribute("aria-pressed", "false");
+      button.setAttribute("aria-pressed", "true");
+      use.hidden = true;
+      selectedBackpackSlot = -1;
+      const name = document.createElement("strong");
+      name.textContent = item.name;
+      detail.replaceChildren(name, document.createTextNode(item.description));
+    });
+    row.append(button);
+    return row;
+  }));
   const entries = Array.from({ length: backpackCapacity }, (_, index) => {
     const slot = document.createElement("li");
     const id = inventory[index];
@@ -1041,14 +1401,10 @@ function renderBackpack(message) {
     button.type = "button";
     button.setAttribute("aria-label", item.name);
     button.setAttribute("aria-pressed", "false");
-    const icon = document.createElement("span");
-    icon.className = "inventory-icon";
-    if (id === medicineItem) icon.classList.add("medicine-pack");
-    icon.dataset.item = id;
-    icon.setAttribute("aria-hidden", "true");
-    button.append(icon);
+    button.title = item.name;
+    button.append(createItemIcon(id));
     button.addEventListener("click", () => {
-      slots.querySelector('[aria-pressed="true"]')?.setAttribute("aria-pressed", "false");
+      backpack.querySelector('.backpack-slot [aria-pressed="true"]')?.setAttribute("aria-pressed", "false");
       button.setAttribute("aria-pressed", "true");
       const name = document.createElement("strong");
       name.textContent = item.name;
@@ -1104,27 +1460,48 @@ get("minimap").addEventListener("click", () => toggleGameMenu(map));
 get("close-map").addEventListener("click", () => map.close());
 get("open-backpack").addEventListener("click", () => toggleGameMenu(backpack));
 get("close-backpack").addEventListener("click", () => backpack.close());
+get("close-inspection").addEventListener("click", () => inspection.close());
+get("open-documents").addEventListener("click", () => toggleGameMenu(documentJournal));
+get("close-documents").addEventListener("click", () => documentJournal.close());
+get("document-tab").addEventListener("click", () => HospitalStory.showJournal());
+get("truth-tab").addEventListener("click", () => HospitalStory.showJournal("truth"));
+get("memory-tab").addEventListener("click", () => HospitalStory.showJournal("memories"));
+get("close-story").addEventListener("click", () => storyDialog.close());
+storyDialog.addEventListener("cancel", (event) => {
+  if (HospitalStory.isFinished()) event.preventDefault();
+});
 deathDialog.addEventListener("cancel", (event) => event.preventDefault());
 get("restart-game").addEventListener("click", async () => {
-  const image = await prepareBackdrop(scenes[start].art);
+  if (!HospitalStory.hasRescue()) return restartFromEnding();
+  const id = "3F-room-3";
+  const image = await prepareBackdrop(scenes[id].art);
   if (!image || !deathDialog.open) return;
-  resetGame();
-  world.classList.remove("player-dead");
-  delete statusHud.dataset.dead;
-  get("combat-status").textContent = "";
-  deathDialog.close();
-  viewport.inert = false;
-  showScene(start, image);
-  updateFlashlightStatus("手电没有电");
+  sanity = maxSanity;
+  stamina = maxStamina;
+  exhausted = false;
+  resumeAfterDeath(deathDialog);
+  showScene(id, image, "return");
   playMusic();
 });
 
-function selectCharacter(id) {
-  character = id;
-  for (const button of characterButtons) {
-    button.setAttribute("aria-pressed", String(button.dataset.character === id));
-  }
-  get("enter-game").disabled = !assetsReady || !character;
+function resumeAfterDeath(dialog) {
+  world.classList.remove("player-dead");
+  delete statusHud.dataset.dead;
+  get("combat-status").textContent = "";
+  get("story-notice").textContent = "";
+  dialog.close();
+  viewport.inert = false;
+}
+
+async function restartFromEnding() {
+  const dialog = deathDialog.open ? deathDialog : storyDialog;
+  const image = await prepareBackdrop(scenes[start].art);
+  if (!image || !dialog.open) return;
+  resetGame();
+  resumeAfterDeath(dialog);
+  showScene(start, image);
+  updateFlashlightStatus("手电没有电");
+  playMusic();
 }
 
 function navigateTitleMenu(event) {
@@ -1168,11 +1545,13 @@ function resetGame() {
   sanity = maxSanity;
   lastGhost = undefined;
   Quake.reset();
+  HospitalStory.stopPursuit();
+  HospitalStory.read();
   setAttackTime(0);
   recoveryTime = 0;
   exhausted = false;
   sprintReleased = true;
-  starterBatteryTaken = spareBatteryTaken = drawerOpen = flashlightOn = false;
+  starterBatteryTaken = spareBatteryTaken = flashlightOn = false;
   inventory = [];
   pickedMedicine.clear();
   batterySeconds = 0;
@@ -1206,14 +1585,6 @@ async function prepareTitleArtwork() {
   return image;
 }
 
-async function prepareMusic() {
-  if (music.src) return music;
-  const response = await fetch("assets/night-ward.wav");
-  if (!response.ok) throw new Error("Music unavailable");
-  music.src = URL.createObjectURL(await response.blob());
-  return music;
-}
-
 function playMusic() {
   music.play().catch((error) => {
     get("music-status").textContent = "背景音乐播放失败，按 B 重试。";
@@ -1228,6 +1599,7 @@ async function loadAssets() {
   retry.hidden = true;
   const arts = new Set(Object.values(scenes).map((entry) => entry.art));
   const assets = [...arts].map(prepareBackdrop);
+  assets.push(...HospitalStory.preloadPatrolArt());
   for (const art of arts) {
     if (!art.startsWith("vision-")) {
       assets.push(prepareBackdrop("clean-" + art).then((image) => {
@@ -1239,7 +1611,13 @@ async function loadAssets() {
       }));
     }
   }
-  assets.push(prepareCabinet(), prepareMusic(), prepareTitleArtwork());
+  music.src = "assets/bach-bwv1007-prelude.mp3";
+  assets.push(prepareCabinet(), prepareTitleArtwork(), ...Array.from(wardIntro.querySelectorAll("img"), async (image) => {
+    await image.decode();
+    return image;
+  }));
+  const closeups = new Set(Object.values(HospitalCase.storage).flat().map(({ art }) => art));
+  for (const art of closeups) assets.push(prepareBackdrop("inspect-" + art));
   for (const { art } of ghosts) {
     const image = new Image();
     image.src = "assets/" + art + ".webp";
@@ -1249,14 +1627,7 @@ async function loadAssets() {
     if (!image.src) image.src = "assets/ghost-hand-" + (index + 1) + ".webp";
     assets.push(image.decode().then(() => image));
   });
-  for (const button of characterButtons) {
-    const id = button.dataset.character;
-    assets.push(prepareCharacter(id).then((image) => {
-      const canvas = button.querySelector("canvas");
-      canvas.getContext("2d").drawImage(image, 0, canvas.height, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-      return image;
-    }), prepareCharacter(id, true));
-  }
+  assets.push(prepareCharacter(playerCharacter), prepareCharacter(playerCharacter, true), prepareCharacter("woman"));
   progress.max = assets.length;
   progress.value = 0;
   status.textContent = "正在加载游戏素材";
@@ -1276,13 +1647,18 @@ async function loadAssets() {
   }
 }
 
-async function enterGame() {
-  if (!assetsReady || !character || gameStarted) return;
-  get("enter-game").disabled = true;
-  if (startingNewGame) resetGame();
-  for (const dialog of document.querySelectorAll("#home dialog[open]")) dialog.close();
+async function enterGame(newGame = false) {
+  if (!assetsReady || gameStarted || enteringGame) return;
+  enteringGame = true;
   playMusic();
-  const image = await prepareBackdrop(scenes[sceneId].art);
+  const image = await prepareBackdrop(scenes[newGame ? start : sceneId].art);
+  enteringGame = false;
+  if (!image) return;
+  if (newGame) {
+    resetGame();
+    openingSeen = false;
+  }
+  for (const dialog of document.querySelectorAll("#home dialog[open]")) dialog.close();
   gameStarted = true;
   get("home").hidden = true;
   stage.hidden = false;
@@ -1292,24 +1668,11 @@ async function enterGame() {
   requestAnimationFrame(animate);
 }
 
-function chooseCharacter(newGame) {
-  startingNewGame = newGame;
-  selectCharacter(character);
-  get("new-game-warning").hidden = !newGame || !savedGame;
-  get("enter-game").textContent = newGame ? "进入医院" : "继续游戏";
-  get("character-select").showModal();
-}
-
 function continueGame() {
-  if (!savedGame) return;
-  startingNewGame = false;
-  get("load-dialog").close();
-  if (character) enterGame();
-  else chooseCharacter(false);
+  if (savedGame) enterGame();
 }
 
-get("enter-game").addEventListener("click", enterGame);
-get("new-game").addEventListener("click", () => chooseCharacter(true));
+get("new-game").addEventListener("click", () => enterGame(true));
 get("continue-game").addEventListener("click", continueGame);
 get("load-game").addEventListener("click", () => get("load-dialog").showModal());
 get("load-slot").addEventListener("click", continueGame);
@@ -1334,11 +1697,8 @@ volumeInput.addEventListener("input", () => {
   try { localStorage.setItem("night-shift-music-volume", String(value)); } catch {}
 });
 
-for (const button of characterButtons) {
-  button.addEventListener("click", () => selectCharacter(button.dataset.character));
-}
 get("retry-assets").addEventListener("click", loadAssets);
+HospitalStory.read();
 readSave();
-selectCharacter(character);
 updateTitleMenu();
 loadAssets();

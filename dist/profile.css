@@ -1,0 +1,172 @@
+.investigation .professional-bar { display: none; }
+.investigation #browser-view.professional-window {
+  --profile-bg: #f4f2ee;
+  --profile-card: #fff;
+  --profile-line: #d8d5d0;
+  --profile-text: #222222;
+  --profile-muted: #57534f;
+  --profile-blue: #0a66c2;
+  background: var(--profile-bg);
+  color: var(--profile-text);
+}
+.investigation .professional-window :focus-visible { outline-color: var(--profile-blue); }
+.investigation .professional-window :is(.site-header, .case-head) { display: none; }
+.investigation .professional-window .professional-bar {
+  display: block;
+  border-bottom: 1px solid var(--profile-line);
+  background: var(--profile-card);
+}
+.investigation .professional-bar .shell {
+  display: flex;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.25rem;
+  padding-block: 0.47rem;
+}
+.investigation .professional-bar :is(.professional-brand, a:first-child) {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  color: var(--profile-blue);
+  font-size: 1.2rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+.investigation .professional-bar :is(.professional-mark, .professional-logo) {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  padding-inline: 0.18rem;
+  border-radius: 0.2rem;
+  background: var(--profile-blue);
+  color: #fff;
+  font: 800 1.1rem/1 var(--sans);
+  letter-spacing: -0.07em;
+}
+.investigation .professional-bar :is(.professional-nav, nav) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  color: var(--profile-muted);
+  font-size: 0.84rem;
+}
+.investigation .professional-bar nav a:hover { color: var(--profile-blue); }
+
+.investigation .professional-window .case-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 17.5rem); gap: 1.25rem; padding-top: 1.25rem; }
+.investigation .professional-window .case-page {
+  --paper: var(--profile-card);
+  --paper-ink: var(--profile-text);
+  --paper-muted: var(--profile-muted);
+  --paper-line: var(--profile-line);
+  --paper-accent: var(--profile-blue);
+  overflow: hidden;
+  border: 1px solid var(--profile-line);
+  border-radius: 0.55rem;
+  background: var(--profile-card);
+  box-shadow: none;
+}
+.investigation .professional-window .source-header { padding: 0.75rem 1.3rem; border-color: var(--profile-line); }
+.investigation .professional-window .source-header h2 { font: 650 1.125rem/1.4 var(--sans); }
+.investigation .professional-window .source-header > :not(h2) { font-weight: 600; letter-spacing: 0; }
+.investigation .professional-window .source-body { padding: 0; }
+.investigation .professional-window .source-body > :not(.professional-hero, .professional-section, .identity-check) { margin-inline: 1.3rem; }
+.investigation .professional-window .source-body > :last-child { margin-bottom: 0; }
+.investigation .professional-window .case-sidebar {
+  color: var(--profile-text);
+  background: var(--profile-card);
+  border-color: var(--profile-line);
+  border-radius: 0.55rem;
+}
+.investigation .professional-window .case-sidebar :is(h2, h3) { font: 700 1.035rem/1.35 var(--sans); }
+.investigation .professional-window .case-progress { color: #165991; }
+.investigation .professional-window .record-list { color: var(--profile-muted); }
+.investigation .professional-window .record-list li { border-color: var(--profile-line); }
+.investigation .professional-window .record-list a { color: var(--profile-blue); }
+.investigation .professional-window .record-list a:hover { color: #004182; }
+.investigation .professional-window .site-footer { color: var(--profile-muted); border-color: var(--profile-line); }
+.investigation .professional-window .site-footer a { color: var(--profile-blue); }
+
+.investigation .professional-window .professional-hero { border-bottom: 1px solid var(--profile-line); }
+.investigation .professional-window .professional-cover {
+  height: clamp(7rem, 16vw, 11rem);
+  background: radial-gradient(ellipse at 85% 131%, #bad5df 0%, #bad5df 47%, transparent 48%),
+    linear-gradient(122deg, #426677 0%, #7196a7 62%, #a6c1ca 100%);
+}
+.investigation .professional-window .professional-summary { padding: 0 1.35rem 1.25rem; }
+.investigation .professional-window .professional-avatar {
+  display: grid;
+  position: relative;
+  place-items: center;
+  width: clamp(5.5rem, 10vw, 8rem);
+  aspect-ratio: 1;
+  margin-top: clamp(-4rem, -5vw, -2.75rem);
+  margin-bottom: 0.65rem;
+  border: 0.25rem solid var(--profile-card);
+  border-radius: 50%;
+  background: #dce6ea;
+  color: #305469;
+  font: 700 clamp(1.5rem, 4vw, 2.3rem)/1 var(--sans);
+  overflow: hidden;
+}
+.investigation .professional-window .profile-portrait { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 34%; }
+.investigation .professional-window .professional-mini-avatar {
+  display: grid; position: relative; place-items: center; flex: none; width: 3.2rem; aspect-ratio: 1;
+  border-radius: 50%; background: #dce6ea; color: #305469; overflow: hidden; font-weight: 700;
+}
+.investigation .professional-window .professional-summary :is(h2, h3) {
+  margin: 0.12rem 0;
+  font: 750 clamp(1.4rem, 3vw, 1.85rem)/1.2 var(--sans);
+}
+.investigation .professional-window .professional-summary p { margin: 0.3rem 0 0; }
+.investigation .professional-window .professional-summary p + p { color: var(--profile-muted); font-size: 0.87rem; }
+.investigation .professional-window :is(.professional-section, .identity-check) { padding: 1.15rem 1.35rem; }
+.investigation .professional-window .professional-section:not(:last-child) { border-bottom: 1px solid var(--profile-line); }
+.investigation .professional-window :is(.professional-section, .identity-check) h3 { margin: 0 0 0.6rem; font: 750 1.16rem/1.35 var(--sans); }
+.investigation .professional-window .professional-section h2 { margin: 0 0 .7rem; font: 750 1.48rem/1.3 var(--sans); }
+.investigation .professional-window .professional-search-result {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  border: 1px solid var(--profile-line);
+  border-radius: .4rem;
+  padding: .8rem .95rem;
+}
+.investigation .professional-window .professional-search-result a { font-weight: 700; }
+.investigation .professional-window .professional-search-result p { margin-bottom: 0; color: var(--profile-muted); }
+.investigation .professional-window .professional-section p { margin: 0.45rem 0; }
+.investigation .professional-window .professional-section ul { margin: 0; padding-inline-start: 1.25rem; }
+.investigation .professional-window .professional-section li + li { margin-top: 0.45rem; }
+.investigation .professional-window .professional-section :is(details, blockquote) {
+  margin: 0.65rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--profile-line);
+  border-left: 0.18rem solid #819caf;
+  background: #f5f8fa;
+}
+
+.investigation .professional-window .identity-check { background: #edf5fb; }
+.investigation .professional-window .identity-check > :first-child { margin-top: 0; }
+.investigation .professional-window .identity-check > :last-child { margin-bottom: 0; }
+.investigation .professional-window .identity-check .deduction-choice { padding-block: 0.4rem; }
+.investigation .professional-window .identity-check .deduction-choice input { accent-color: var(--profile-blue); }
+.investigation .professional-window .source-body button {
+  padding: 0.42rem 0.95rem;
+  border: 1px solid #095ba8;
+  border-radius: 2rem;
+  background: var(--profile-blue);
+  color: #fff;
+}
+.investigation .professional-window .source-body button:hover:not(:disabled) { background: #004182; }
+.investigation .professional-window .complete-note { border-color: #b7cedb; background: #e8f3fa; color: #134567; }
+
+@media (max-width: 760px) {
+  .investigation .professional-window .case-grid { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; padding-top: 0.75rem; }
+}
+
+@media (max-width: 440px) {
+  .investigation .professional-bar .shell { gap: 0.3rem 0.5rem; }
+  .investigation .professional-window :is(.source-header, .professional-summary, .professional-section, .identity-check) { padding-inline: 0.85rem; }
+  .investigation .professional-window .source-body > :not(.professional-hero, .professional-section, .identity-check) { margin-inline: 0.85rem; }
+}

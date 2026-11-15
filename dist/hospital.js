@@ -13,6 +13,18 @@ const Hospital = (() => {
   const start = "2F-room-1";
   const corridorArtWidth = 1800;
   const corridorWidth = 2040;
+  const visionRooms = {
+    "1F": ["亮灯的门廊", "vision-porch"],
+    "2F": ["无号病房", "vision-ward"],
+    "3F": ["倒影观察室", "vision-reflection"],
+    B1: ["没有人的饭厅", "vision-dining"],
+  };
+  const hidingPlaces = {
+    "2F-room-1": ["bed", [62, 408, 227, 43]],
+    "2F-room-2": ["locker", [369, 140, 142, 331]],
+    "1F-room-1": ["bed", [139, 343, 196, 110]],
+    "3F-room-1": ["bed", [554, 395, 195, 56]],
+  };
   // Threshold and frame height are measured in the rendered 600px-high scene.
   const geometry = {
     ward: { floorY: 456, doorHeight: 264 },
@@ -41,11 +53,6 @@ const Hospital = (() => {
     "room-b02": { floorY: 464, doorHeight: 329, outlines: { return: [116, 131, 134, 329] } },
     "room-b03": { floorY: 469, doorHeight: 340, outlines: { return: [120, 126, 126, 340] } },
   };
-  const medicineLocations = {
-    "1F-room-2": { x: 638, y: 502, outline: [621, 307, 34, 24] },
-    "2F-room-3": { x: 323, y: 492, outline: [306, 286, 34, 24] },
-  };
-
   floors.forEach((floor, index) => {
     const { id, rooms } = floor;
     const hall = id + "-hall";
@@ -61,6 +68,7 @@ const Hospital = (() => {
       door("room-" + (slot + 1), [doorCenter("room-1"), 665, 1135][slot] * corridorScale, slot === 0 ? "north" : "south",
         label, id + "-room-" + (slot + 1), "return")
     );
+    if (id === "3F") doors[1].lock = "archiveKey";
     doors.push(door("stairs", doorCenter("stairs") * corridorScale, "north", "楼梯间", stairs, "hall"));
     const vision = id + "-vision";
     doors.push({
@@ -68,11 +76,11 @@ const Hospital = (() => {
       hallucination: true,
     });
     scenes[hall] = { floor: id, name: "走廊", art: hallArt, width: corridorWidth, doors };
-    const reflection = index % 2 === 0;
+    const [visionName, visionArt] = visionRooms[id];
     scenes[vision] = {
       floor: id,
-      name: reflection ? "倒影观察室" : "无号病房",
-      art: reflection ? "vision-reflection" : "vision-ward",
+      name: visionName,
+      art: visionArt,
       width: 900,
       hallucination: true,
       doors: [door("return", 450, "south", "返回走廊", hall, "vision")],
@@ -83,29 +91,14 @@ const Hospital = (() => {
       const ward = roomId === start;
       const roomArt = ward ? "ward-inward" : "room-" + name.split(" ")[0].toLowerCase();
       const outline = artworkGeometry[roomArt]?.outlines?.return;
-      const medicine = medicineLocations[roomId];
       scenes[roomId] = {
         floor: id, name, art: roomArt, width: 900,
         doors: [door("return", slot === 0 ? 450 : outline[0] + outline[2] / 2, slot === 0 ? "south" : "north",
           "返回走廊", hall, "room-" + (slot + 1))],
-        items: ward ? [{
-          id: "battery", kind: "item", label: "拾取电池",
-          x: 349, y: 490, outline: [336, 346, 28, 17],
-        }] : id === "1F" && slot === 0 ? [{
-          id: "drawer", kind: "item", label: "打开柜子抽屉",
-          x: 573, y: 490, outline: [529, 338, 88, 27],
-          sprite: [521, 311, 104, 153],
-          contents: {
-            id: "spare-battery", kind: "item", label: "拾取备用电池",
-            x: 573, y: 490, outline: [555, 343, 28, 17],
-          },
-        }] : [],
       };
-      if (medicine) {
-        scenes[roomId].items.push({
-          id: "medicine-" + roomId, kind: "item", inventoryId: "medicine",
-          label: "拾取安神药", ...medicine,
-        });
+      if (hidingPlaces[roomId]) {
+        const [type, outline] = hidingPlaces[roomId];
+        scenes[roomId].hideout = { type, outline };
       }
     });
 
@@ -116,6 +109,12 @@ const Hospital = (() => {
     const mirrored = index % 2 === 1;
     if (upper) stairDoors.push(door("up", mirrored ? 160 : 740, "north", "上楼 · " + upper.id, upper.id + "-stairs", "down", "上楼"));
     if (lower) stairDoors.push(door("down", mirrored ? 740 : 160, "north", "下楼 · " + lower.id, lower.id + "-stairs", "up", "下楼"));
+    if (id === "1F") {
+      const basementDoor = stairDoors.find((portal) => portal.id === "down");
+      basementDoor.label = "地下室铁门";
+      basementDoor.verb = "开门";
+      basementDoor.lock = "basementKey";
+    }
     scenes[stairs] = {
       floor: id, name: "楼梯间",
       art: !upper ? "stairs-top" : !lower ? "stairs-base" : "stairs-landing",

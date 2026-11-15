@@ -1,0 +1,284 @@
+.investigation .institution-window {
+  background: #f4f6f8;
+}
+.investigation .institution-window > .shell { width: 100%; }
+.investigation .institution-window :is(.site-header, .case-head, .site-footer, .forum-sidebar) { display: none; }
+.investigation .institution-window .case-grid { display: block; padding: 0; }
+.investigation .institution-window .case-page { border: 0; background: none; box-shadow: none; }
+
+.institution-site {
+  --site-ink: #202931;
+  --site-muted: #57616c;
+  --site-accent: #344e64;
+  --site-surface: #fff;
+  --site-tint: #f3f6f8;
+  --site-line: #dce3e9;
+  --site-hero: var(--site-tint);
+  --hero-ink: var(--site-ink);
+  --hero-muted: var(--site-muted);
+  min-height: calc(100svh - 9.5rem);
+  background: var(--site-surface);
+  color: var(--site-ink);
+}
+.institution-inner {
+  width: min(calc(100% - 4rem), 72rem);
+  margin-inline: auto;
+}
+.institution-bar {
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px solid var(--site-line);
+  background: var(--site-surface);
+}
+.institution-bar-inner {
+  min-height: 4.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem 2rem;
+  flex-wrap: wrap;
+  padding-block: .7rem;
+}
+.institution-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .7rem;
+  text-decoration: none;
+  color: var(--site-ink);
+}
+.institution-mark {
+  flex: none;
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  align-items: center;
+  justify-items: center;
+  border-radius: .35rem;
+  background: var(--site-accent);
+  color: white;
+  font: 700 1.25rem/1 var(--serif);
+}
+.institution-wordmark { display: grid; line-height: 1.15; gap: .34rem; }
+.institution-wordmark strong { font-size: 1.24rem; letter-spacing: .035em; }
+.institution-wordmark small { color: var(--site-muted); font: 650 .62rem/1.2 var(--sans); letter-spacing: .08em; }
+.institution-nav { display: flex; flex-wrap: wrap; gap: .3rem clamp(.75rem, 2.5vw, 1.75rem); align-items: center; }
+.institution-nav-link {
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  color: var(--site-muted);
+  text-decoration: none;
+  font-size: .86rem;
+  font-weight: 650;
+}
+.institution-nav-link:is(:hover, [aria-current]) { border-bottom-color: var(--site-accent); color: var(--site-accent); }
+.institution-hero { background: var(--site-hero); color: var(--hero-ink); }
+.institution-hero-inner {
+  min-height: 10rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.6rem;
+  padding-block: clamp(1.6rem, 5vw, 3.1rem);
+}
+.institution-heading {
+  margin: 0;
+  font-size: clamp(1.85rem, 4.7vw, 3.3rem);
+  font-weight: 750;
+  line-height: 1.24;
+  letter-spacing: -.012em;
+  text-wrap: balance;
+}
+.institution-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .7rem;
+  align-items: baseline;
+  margin-bottom: .72rem;
+  color: var(--hero-muted);
+  font-size: .8rem;
+}
+.institution-crumbs [aria-current]::before { content: "/"; margin-inline-end: .7rem; opacity: .65; }
+.institution-description { max-width: 36rem; margin: .65rem 0 0; color: var(--hero-muted); }
+
+.investigation .institution-site .institution-content {
+  --paper: var(--site-surface);
+  --paper-ink: var(--site-ink);
+  --paper-accent: var(--site-accent);
+  --paper-muted: var(--site-muted);
+  --paper-line: var(--site-line);
+  padding: clamp(1.25rem, 4vw, 2.7rem) 0 clamp(2.25rem, 7vw, 4.8rem);
+}
+.institution-site .institution-content > p, .institution-site .institution-content > blockquote { max-width: 67ch; }
+.institution-site .institution-content h3 { font-family: var(--sans); font-size: 1.2rem; }
+.institution-site .institution-content > .lead-card {
+  width: min(100%, 58rem);
+  min-height: 3.3rem;
+  border: 1px solid var(--site-line);
+  border-radius: .22rem;
+  background: var(--site-surface);
+  color: var(--site-accent);
+  padding: .7rem .95rem;
+  font-weight: 650;
+}
+.institution-site .institution-content > .lead-card:hover { background: var(--site-tint); border-color: var(--site-accent); }
+.institution-site .institution-content > .lead-card::after { content: "›"; margin-inline-start: auto; color: var(--site-accent); font-size: 1.2em; }
+.investigation .institution-site :focus-visible { outline-color: var(--site-accent); }
+.investigation .institution-hero :focus-visible { outline-color: currentColor; }
+
+.institution-site[data-site="university"] {
+  --site-accent: #7b1f37;
+  --site-line: #e5dce1;
+  --site-tint: #f7f1f3;
+  --site-hero: #661e33;
+  --hero-ink: #fffafb;
+  --hero-muted: #f3d4dc;
+}
+[data-site="university"] .institution-mark { border-radius: 50%; outline: 1px solid #7b1f37; outline-offset: 2px; }
+[data-site="university"] .institution-heading { font-family: var(--serif); font-weight: 800; letter-spacing: .025em; }
+[data-site="university"] .institution-hero {
+  background: radial-gradient(ellipse at 88% 135%, #9d5362, transparent 44%),
+    linear-gradient(115deg, #53172c, #661e33 60%, #72243a);
+}
+[data-site="university"][data-page="home"] .institution-hero-inner { min-height: clamp(11rem, 24vw, 17rem); }
+[data-site="university"] .institution-content > .lead-card { border-inline-start: .22rem solid var(--site-accent); }
+
+.institution-site[data-site="company"] {
+  --site-accent: #164a73;
+  --site-tint: #f0f6fb;
+  --site-line: #d7e2eb;
+  --site-hero: #edf4fa;
+}
+[data-site="company"] .institution-mark { background: #18334a; border-radius: 0; box-shadow: inset 0 0 0 3px #18334a, inset 0 0 0 4px #7eacba; }
+[data-site="company"][data-page="home"] .institution-hero {
+  --hero-ink: #f8fcff;
+  background: linear-gradient(110deg, #102843 9%, #164766 66%, #407488);
+}
+[data-site="company"][data-page="home"] .institution-hero-inner { min-height: clamp(11rem, 25vw, 17rem); }
+[data-site="company"] .institution-content > h3 { padding: .45rem 0; border-bottom: 1px solid var(--site-line); }
+[data-site="company"] .institution-content > .institution-announcement { border-inline: 0; border-radius: 0; }
+.institution-announcement-date { min-width: 4.35rem; font: 680 .81rem/1 var(--sans); font-variant-numeric: tabular-nums; }
+[data-site="company"][data-page="transport"] .institution-content > a[href^="#transfer/"] {
+  background: var(--site-tint);
+  font-variant-numeric: tabular-nums;
+}
+
+.institution-site[data-site="registry"] {
+  --site-accent: #195cb8;
+  --site-hero: #edf4ff;
+  --site-line: #d3dfee;
+  --site-tint: #f5f8fd;
+}
+[data-site="registry"] .institution-mark {
+  border-radius: .65rem;
+  background: linear-gradient(140deg, #327fff, #1b57b2);
+  font-family: var(--sans);
+}
+[data-site="registry"][data-page="home"] .institution-hero { background: linear-gradient(154deg, #f9fbff, #e5f0ff); }
+[data-site="registry"][data-page="home"] .institution-hero-inner { justify-content: center; text-align: center; }
+[data-site="registry"][data-page="home"] .institution-content { max-width: 49rem; }
+[data-site="registry"] .web-site-search {
+  max-width: 49rem;
+  padding: .9rem;
+  border: 1px solid var(--site-line);
+  border-radius: .55rem;
+  background: var(--site-tint);
+}
+[data-site="registry"] .web-site-search input { background: white; color: var(--site-ink); border-color: #bdcfe3; }
+.investigation [data-site="registry"] .web-site-search button { background: var(--site-accent); border-color: var(--site-accent); color: #fff; }
+.investigation [data-site="registry"] .web-site-search button:hover:not(:disabled) { background: #15478a; }
+[data-site="registry"] .search-results { max-width: 56rem; }
+[data-site="registry"] .institution-content > p:first-child { padding-block: .4rem; }
+
+.institution-site[data-site="directory"] {
+  --site-accent: #006d67;
+  --site-line: #cfe2df;
+  --site-tint: #f0f9f7;
+  --site-hero: #e6f4f2;
+}
+[data-site="directory"] .institution-hero {
+  background: linear-gradient(115deg, #dceeea, #eef8f6 73%);
+}
+[data-site="directory"] .institution-mark { border-radius: .53rem; font: 650 2rem/.9 var(--sans); }
+.institution-directory {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: .95rem;
+  margin: 1rem 0 1.75rem;
+  padding: 0;
+}
+.institution-address {
+  padding: 1.1rem 1.2rem 1.25rem;
+  border: 1px solid var(--site-line);
+  border-radius: .55rem;
+  background: var(--site-tint);
+}
+.institution-site .institution-content .institution-address h3 { margin: .8rem 0 .25rem; }
+.institution-site .institution-content .institution-address p { margin: 0; color: var(--site-muted); }
+.institution-location-pin {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  margin: .1rem .16rem .35rem;
+  transform: rotate(-45deg);
+  border: 2px solid var(--site-accent);
+  border-radius: 56% 56% 56% 12%;
+}
+.institution-location-pin::after {
+  display: block;
+  width: .28rem;
+  height: .28rem;
+  margin: .23rem;
+  border-radius: 50%;
+  background: var(--site-accent);
+  content: "";
+}
+
+.institution-site[data-site="feng"] {
+  --site-accent: #87522c;
+  --site-line: #eadbcd;
+  --site-tint: #f9f3eb;
+  --site-hero: #f5e6d8;
+}
+[data-site="feng"] .institution-mark { border-radius: 46% 46% 10% 10%; }
+[data-site="feng"] .institution-heading { font-family: var(--serif); }
+.institution-site[data-site="parenting"] {
+  --site-accent: #754a71;
+  --site-line: #e4d8e3;
+  --site-tint: #faf4f8;
+  --site-hero: #f3e5ee;
+}
+[data-site="parenting"] .institution-mark { border-radius: 50% 50% 50% 16%; }
+[data-site="parenting"] .institution-content > p:first-child { color: var(--site-muted); font-size: .86rem; }
+[data-site="parenting"] .institution-content blockquote { border-left-width: 3px; padding: 1rem 1.2rem; background: var(--site-tint); }
+.institution-portrait { margin: 0; flex: 0 0 clamp(6.25rem, 19vw, 10.25rem); }
+.institution-portrait-frame {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: .4rem;
+  border: 1px solid var(--site-line);
+  background: var(--site-tint);
+}
+.institution-portrait-monogram { color: var(--site-accent); font: 750 clamp(2.25rem, 7vw, 4rem)/1 var(--serif); }
+.institution-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; }
+.institution-portrait figcaption { padding-top: .4rem; color: var(--site-muted); font-size: .78rem; font-weight: 650; text-align: center; }
+
+@media (max-width: 42rem) {
+  .institution-inner { width: calc(100% - 1.7rem); }
+  .institution-bar-inner { gap: .4rem 1rem; }
+  .institution-nav { column-gap: .65rem; }
+  .institution-nav-link { min-height: 1.85rem; font-size: .78rem; }
+  .institution-hero-inner { gap: .7rem; min-height: 8rem; }
+  .institution-portrait { flex-basis: 5.35rem; }
+}
+@media (max-width: 24rem) {
+  .institution-wordmark small { letter-spacing: .025em; }
+  .institution-portrait { flex-basis: 4.4rem; }
+  .institution-portrait figcaption { font-size: .68rem; }
+  [data-site="registry"] .web-site-search button { flex-grow: 1; }
+}
