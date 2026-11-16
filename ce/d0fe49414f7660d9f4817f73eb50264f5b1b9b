@@ -1,0 +1,23 @@
+剧情文本与玩家流程.html
+  s_88a18c6b5f726d::t_d666e15224481b 202-210,214,216,219,581,588-602
+  s_88a18c6b5f726d::t_d6756790b99fcd 102-105,395,397,399,403,408,411,413-418,430,433,438,441-442,446,449-450,454,465-466
+  s_88a18c6b5f726d::t_c1e4c9b402cb75 215,217
+  s_88a18c6b5f726d::t_2103c0d00d4506 218,220
+  s_88a18c6b5f726d::t_bbaf726f677e2f 434,457-458,461-462
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ced0fe49414f7660d9f4817f73eb50264f5b1b9b",
+  "prompts": {},
+  "sessions": {
+    "s_88a18c6b5f726d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e23a-d04f-72a0-a869-fe23c00131e9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "junjie.qu <junjie.qu@antgroup.com>"
+    }
+  }
+}
