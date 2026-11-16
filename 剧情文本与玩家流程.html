@@ -51,29 +51,56 @@
       border-left: 3px solid var(--accent); color: #594139;
     }
     blockquote p { margin: .2rem 0; }
+    #manuscript-heading, .manuscript-contents, #manuscript-text {
+      width: min(100%, 39rem); margin-inline: auto;
+    }
+    #manuscript-heading {
+      margin-block-end: .75rem; color: var(--muted);
+      font: 650 .92rem/1.5 var(--sans); letter-spacing: .08em;
+    }
+    .manuscript-contents { margin-block-end: clamp(1.8rem, 5vw, 3.3rem); border-block: 1px solid var(--rule); }
+    .manuscript-contents summary {
+      width: fit-content; padding-block: .6rem; color: var(--accent);
+      cursor: pointer; font-size: .87rem; font-weight: 650;
+    }
+    .manuscript-chapters {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .12rem .9rem; margin: 0 0 .75rem; padding: 0; list-style: none;
+    }
+    .manuscript-chapters button {
+      width: 100%; padding: .28rem .45rem; border: 0;
+      background: transparent; color: var(--ink); text-align: start;
+      font-size: .88rem; line-height: 1.45; white-space: normal;
+    }
+    .manuscript-chapters button:hover, .manuscript-chapters button:focus-visible {
+      background: #f2e9dc; color: var(--accent);
+    }
     #manuscript-text {
-      max-width: 38em; margin-inline: auto;
-      font: clamp(1rem, 2.2vw, 1.125rem)/1.9 var(--serif);
+      font: clamp(1.0625rem, 1.01rem + .3vw, 1.1875rem)/1.96 var(--serif);
       line-break: strict;
     }
     #manuscript-text > h3 {
-      margin: 0 0 .35em; text-align: center;
-      font-size: clamp(1.85rem, 5vw, 2.65rem); letter-spacing: .08em;
+      margin: 0 0 .46em; text-align: center;
+      font-size: clamp(2.3rem, 6vw, 3.35rem); letter-spacing: .15em;
+      padding-inline-start: .15em;
     }
     #manuscript-text > h3 + p:has(> em:only-child) {
-      margin: 0 0 2em; color: var(--muted); text-align: center; text-indent: 0;
+      max-width: 28em; margin: 0 auto 2.2em; color: var(--muted);
+      text-align: center; text-indent: 0; line-height: 1.75;
     }
     #manuscript-text > h4 {
-      margin: 2em 0 .75em; padding-top: .8em; border-top: 1px solid var(--rule);
-      color: var(--accent); font-size: 1.25em; break-after: avoid;
+      margin: 2.8em 0 .9em; padding-top: 1em; border-top: 1px solid var(--rule);
+      color: var(--accent); font-size: 1.34em; font-weight: 700;
+      scroll-margin-top: 1.2rem; break-after: avoid;
     }
-    #manuscript-text > p { margin: 0 0 .65em; text-indent: 2em; }
+    #manuscript-text > h4:first-of-type { margin-top: 1.6em; }
+    #manuscript-text > p { margin: 0 0 .74em; text-indent: 2em; orphans: 2; widows: 2; }
     #manuscript-text > p.manuscript-dialogue {
-      padding-inline-start: 2em; text-indent: 0;
+      padding-inline-start: 2em; text-indent: -.5em;
     }
-    #manuscript-text > p.manuscript-dialogue:has(+ .manuscript-dialogue) { margin-bottom: .25em; }
+    #manuscript-text > p.manuscript-dialogue:has(+ .manuscript-dialogue) { margin-bottom: .27em; }
     #manuscript-text > p:last-child:has(> strong:only-child) {
-      margin: 1.8em 0 0; text-align: center; text-indent: 0;
+      margin: 2.2em 0 0; text-align: center; text-indent: 0;
     }
     #flow-text { min-height: 5rem; }
     #flow-text li + li { margin-top: .45rem; }
@@ -195,6 +222,7 @@
     }
     @media print {
       .toolbar { display: none; }
+      .manuscript-contents { display: none; }
       body, main { background: #fff; }
       main { width: 100%; margin: 0; padding: 0; border: 0; }
       h2, h3 { break-after: avoid; }
@@ -248,6 +276,10 @@
 
     <section id="manuscript" class="sheet" aria-labelledby="manuscript-heading">
       <h2 id="manuscript-heading">剧情母本</h2>
+      <details id="manuscript-contents" class="manuscript-contents" open hidden>
+        <summary>章节目录</summary>
+        <ol id="manuscript-chapters" class="manuscript-chapters"></ol>
+      </details>
       <article id="manuscript-text" contenteditable="true" spellcheck="false" aria-label="剧情母本正文" tabindex="0">
         <h3>恶意</h3>
         <p><em>“有些人穷尽一生，也无法原谅另一个人得到的一切。”</em></p>
@@ -1246,10 +1278,28 @@
       activeProfile = undefined;
     });
 
+    const manuscriptEditor = document.querySelector('#manuscript-text');
+    const manuscriptContents = document.querySelector('#manuscript-contents');
+    const chapterList = document.querySelector('#manuscript-chapters');
+
+    function updateManuscriptContents() {
+      const chapters = [...manuscriptEditor.querySelectorAll(':scope > h4')];
+      chapterList.replaceChildren(...chapters.map((heading) => {
+        const item = document.createElement('li');
+        const jump = document.createElement('button');
+        jump.type = 'button';
+        jump.textContent = heading.textContent.trim();
+        jump.addEventListener('click', () => heading.scrollIntoView({ block: 'start' }));
+        item.append(jump);
+        return item;
+      }));
+      manuscriptContents.hidden = !chapters.length;
+    }
+
     // Keep the new editor after the original fields in saved drafts.
     const editors = [
       ...document.querySelectorAll('[contenteditable]:not(#manuscript-text)'),
-      document.querySelector('#manuscript-text'),
+      manuscriptEditor,
     ];
     const status = document.querySelector('#status');
     const saveHint = status.textContent;
@@ -1304,6 +1354,9 @@
       // Downloads still work when local storage is unavailable.
     }
 
+    updateManuscriptContents();
+    manuscriptEditor.addEventListener('input', updateManuscriptContents);
+
     document.querySelector('main').addEventListener('input', () => {
       try {
         localStorage.setItem(draftKey, JSON.stringify({
@@ -1320,6 +1373,8 @@
       const copy = document.documentElement.cloneNode(true);
       const manuscript = copy.querySelector('#manuscript-text');
       manuscript.innerHTML = formatManuscript(manuscript.innerHTML);
+      copy.querySelector('#manuscript-contents').hidden = true;
+      copy.querySelector('#manuscript-chapters').replaceChildren();
       copy.querySelector('#status').textContent = saveHint;
       copy.querySelector('#character-dialog').removeAttribute('open');
       copy.querySelector('#character-title').textContent = '人物介绍';
