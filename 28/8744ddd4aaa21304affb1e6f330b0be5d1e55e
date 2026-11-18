@@ -1,0 +1,19 @@
+剧情文本与玩家流程.html
+  s_88a18c6b5f726d::t_76023fb2b5e62c 333-337,347,383,392-395,397-398,411-417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "288744ddd4aaa21304affb1e6f330b0be5d1e55e",
+  "prompts": {},
+  "sessions": {
+    "s_88a18c6b5f726d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e23a-d04f-72a0-a869-fe23c00131e9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "starWave0225 <165939231+starWave0225@users.noreply.github.com>"
+    }
+  }
+}
